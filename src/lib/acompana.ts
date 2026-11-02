@@ -394,6 +394,24 @@ async function marcarSinRespuesta(d: Deps, p: typeof platicas.$inferSelect, adul
 // ─── Programador ─────────────────────────────────────────────
 
 /**
+ * El saludo del día. Una vez al día, junto con el saludo, salen los recordatorios para la familia
+ * (medicinas, citas, cumpleaños). Devuelve null si hoy ya se le saludó.
+ */
+export async function saludar(d: Deps, adulto: typeof adultos.$inferSelect, fecha: string) {
+  const ahora = d.ahora();
+  const [nueva] = await d.db.insert(platicas).values({ adultoId: adulto.id, fecha, enviadaEn: ahora, ultimaActividadEn: ahora })
+    .onConflictDoNothing().returning();
+  if (!nueva) return null;
+  await d.wa.enviarPlantilla(adulto.telefono, env.plantillaSaludo, [adulto.comoLlamarle]);
+  await d.db.insert(mensajes).values({ platicaId: nueva.id, de: "acompana", tipo: "texto", texto: textoSaludo(adulto.comoLlamarle) });
+  const recordatorios = await recordatoriosFamilia(d, adulto, fecha).catch((e) => {
+    console.error("Recordatorios fallaron", e);
+    return 0;
+  });
+  return { platica: nueva, recordatorios };
+}
+
+/**
  * Se llama cada 5 minutos desde un cron.
  * Manda saludos a su hora, reintenta si no contestan y cierra pláticas que se quedaron a medias.
  */
@@ -429,17 +447,10 @@ export async function tick(d: Deps) {
 
       if (!hoy) {
         if (local.minutos >= minutosDeHora(adulto.horaSaludo)) {
-          const [nueva] = await d.db.insert(platicas).values({ adultoId: adulto.id, fecha: local.fecha, enviadaEn: ahora, ultimaActividadEn: ahora })
-            .onConflictDoNothing().returning();
-          if (nueva) {
-            await d.wa.enviarPlantilla(adulto.telefono, env.plantillaSaludo, [adulto.comoLlamarle]);
-            await d.db.insert(mensajes).values({ platicaId: nueva.id, de: "acompana", tipo: "texto", texto: textoSaludo(adulto.comoLlamarle) });
+          const r = await saludar(d, adulto, local.fecha);
+          if (r) {
             resultado.saludos++;
-            // Una vez al día, con el saludo: recordatorios para la familia (medicinas, citas, cumpleaños)
-            resultado.recordatorios += await recordatoriosFamilia(d, adulto, local.fecha).catch((e) => {
-              console.error("Recordatorios fallaron", e);
-              return 0;
-            });
+            resultado.recordatorios += r.recordatorios;
           }
         }
         continue;

@@ -29,6 +29,13 @@
       "when": 1793602190193,
       "tag": "0003_avisos",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793631629952,
+      "tag": "0004_modo_prueba",
+      "breakpoints": true
     }
   ]
 }

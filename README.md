@@ -36,9 +36,21 @@ Etapa 2 (semi-automática): la IA platica, resume y detecta alertas; **nada le l
 
 ---
 
-## Probarlo en tu computadora
+## Probar en tu computadora (sin WhatsApp)
 
-Necesitas Node 20 o más nuevo.
+```
+npm install
+npm run probar
+```
+
+Abre http://localhost:3000/panel/probar (contraseña: `prueba`) y pulsa **Crear una familia de prueba**. Verás dos celulares simulados: en el de la mamá escribes como ella y en el del hijo ves lo que le llega (y puedes contestar como él: "¿cómo va mi mamá?", "Recado: …", "solo lo importante"). Los botones mandan el saludo del día, terminan la plática para hacer el resumen y mandan los recordatorios.
+
+- No sale nada a WhatsApp ni se gasta nada. La base de datos queda en la carpeta `.pglite`.
+- Sin `ANTHROPIC_API_KEY` en tu `.env`, la IA contesta con respuestas de ejemplo. Con la clave, platicas con la IA de verdad (unos centavos de dólar por plática).
+- Las notas de voz se muestran como texto. La voz real se prueba ya con WhatsApp.
+- Necesitas Node 20 o más nuevo ([nodejs.org](https://nodejs.org)).
+
+### Con tu propia configuración (avanzado)
 
 ```bash
 npm install

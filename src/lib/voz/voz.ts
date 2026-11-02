@@ -1,5 +1,6 @@
 import OpenAI, { toFile } from "openai";
 import { env } from "../env";
+import { VozSimulada } from "../prueba/simulado";
 import { oggAWav } from "./audio";
 
 /** Voz a texto (para entender sus notas de voz) y texto a voz (para responderle). */
@@ -99,7 +100,7 @@ export class VozConfigurada implements Voz {
 
 let voz: Voz | null = null;
 export function getVoz(): Voz {
-  if (!voz) voz = new VozConfigurada();
+  if (!voz) voz = env.modoPrueba ? new VozSimulada() : new VozConfigurada();
   return voz;
 }
 export function usarVoz(nueva: Voz) {

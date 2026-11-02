@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { env } from "../env";
+import { IAEjemplo } from "../prueba/ia-ejemplo";
 import type { DatosResumen } from "../db/schema";
 import {
   herramientaClasificar, herramientaResponder, herramientaResumir,
@@ -148,7 +149,7 @@ export class IAClaude implements IA {
 
 let ia: IA | null = null;
 export function getIA(): IA {
-  if (!ia) ia = new IAClaude();
+  if (!ia) ia = env.iaDeEjemplo ? new IAEjemplo() : new IAClaude();
   return ia;
 }
 export function usarIA(nueva: IA) {

@@ -1,4 +1,5 @@
 import { env } from "../env";
+import { WhatsAppSimulado } from "../prueba/simulado";
 
 /** Todo lo que la app necesita para hablar por WhatsApp. En pruebas se usa una versión falsa. */
 export interface Mensajero {
@@ -109,7 +110,7 @@ export class WhatsAppCloud implements Mensajero {
 
 let mensajero: Mensajero | null = null;
 export function getMensajero(): Mensajero {
-  if (!mensajero) mensajero = new WhatsAppCloud();
+  if (!mensajero) mensajero = env.modoPrueba ? new WhatsAppSimulado() : new WhatsAppCloud();
   return mensajero;
 }
 export function usarMensajero(nuevo: Mensajero) {

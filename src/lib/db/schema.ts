@@ -211,3 +211,13 @@ export const historias = pgTable("historias", {
   audios: jsonb("audios").$type<Array<{ mime: string; base64: string }>>().notNull().default([]),
   creadaEn: timestamp("creada_en", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("historias_adulto_idx").on(t.adultoId)]);
+
+/** Solo para el modo prueba: lo que "llegaría" a cada celular y lo que se escribe desde el simulador. */
+export const bandeja = pgTable("bandeja", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  telefono: text("telefono").notNull(),
+  direccion: text("direccion", { enum: ["sale", "entra"] }).notNull(),
+  tipo: text("tipo", { enum: ["texto", "audio", "plantilla"] }).notNull(),
+  texto: text("texto").notNull(),
+  creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("bandeja_telefono_idx").on(t.telefono, t.creadoEn)]);
