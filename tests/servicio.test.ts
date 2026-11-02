@@ -55,7 +55,7 @@ describe("programador diario", () => {
     r.avanzarMinutos(31);
     expect((await tick(d)).cerradas).toBe(1);
     const [res] = await db.select().from(resumenes);
-    expect(res.estado).toBe("pendiente");
+    expect(res.estado).toBe("enviado"); // día normal: sale solo
     expect(res.memoria).toBe("Mañana va al mercado");
   });
 
@@ -139,36 +139,70 @@ describe("plática por WhatsApp", () => {
     expect(await db.select().from(alertas)).toHaveLength(1);
   });
 
-  it("cuando la IA se despide, la plática se cierra y queda un resumen pendiente", async () => {
+  it("cuando la IA se despide, la plática se cierra y el resumen de un día normal sale solo", async () => {
     const d = deps(db);
     d.ia.respuesta = { mensaje: "Que tenga bonito día, Doña Rosa.", terminar: true };
     await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.bye", texto: "Bueno, ya me voy" });
     const [p] = await db.select().from(platicas);
     expect(p.estado).toBe("terminada");
-    expect((await db.select().from(resumenes))[0].estado).toBe("pendiente");
+    expect((await db.select().from(resumenes))[0].estado).toBe("enviado");
   });
 });
 
 describe("resumen para la familia", () => {
-  it("solo sale después de aprobarlo, a quien recibe resúmenes, y una sola vez", async () => {
+  it("un día normal sale solo: aviso corto por WhatsApp y el resumen completo en la página", async () => {
     const d = deps(db);
     await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.s", texto: "Bien" });
     const [p] = await db.select().from(platicas);
     const r = await cerrarPlatica(d, p.id);
-    expect(d.wa.plantillas("resumen_diario")).toHaveLength(0);
-
-    const res = await enviarResumen(d, r!.id, "Hoy amaneció muy bien.\nRegó sus plantas.", "Daniel");
-    expect(res.enviados).toBe(1);
-    const envio = d.wa.plantillas("resumen_diario")[0];
-    expect(envio.para).toBe("13105551234");
+    expect(r!.estado).toBe("enviado");
+    expect(r!.revisadoPor).toBe("automático");
+    expect(r!.textoFinal).toContain("Todo tranquilo");
+    const envios = d.wa.plantillas("resumen_diario");
+    expect(envios).toHaveLength(1); // solo a quien recibe resúmenes
+    expect(envios[0].para).toBe("13105551234");
     const { familias } = await import("../src/lib/db/schema");
     const [fam] = await db.select().from(familias);
-    expect(envio.parametros).toEqual(["Doña Rosa", "lunes 2 de noviembre", "Hoy amaneció muy bien. Regó sus plantas.", fam.tokenPagina]);
-
-    const [guardado] = await db.select().from(resumenes).where(eq(resumenes.id, r!.id));
-    expect(guardado.estado).toBe("enviado");
-    expect(guardado.revisadoPor).toBe("Daniel");
+    expect(envios[0].parametros).toEqual(["Doña Rosa", "lunes 2 de noviembre", "Amaneció bien y platicó un rato.", fam.tokenPagina]);
     expect((await enviarResumen(d, r!.id, "otra vez", "Daniel")).yaEnviado).toBe(true);
+  });
+
+  it("lo delicado espera revisión; si lo corriges, el aviso sale de tu versión", async () => {
+    const d = deps(db);
+    d.ia.nivelResumen = "amarillo";
+    await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.s2", texto: "Me duele la rodilla" });
+    const [p] = await db.select().from(platicas);
+    const r = await cerrarPlatica(d, p.id);
+    expect(r!.estado).toBe("pendiente");
+    expect(d.wa.plantillas("resumen_diario")).toHaveLength(0);
+
+    const largo = "Hoy le dolió la rodilla y casi no caminó. Dice que es por el frío. Regó sus plantas y vio la novela. Si puedes, llámale en la tarde para ver cómo sigue y si quiere ir al doctor esta semana.";
+    const res = await enviarResumen(d, r!.id, largo, "Daniel");
+    expect(res.enviados).toBe(1);
+    const aviso = d.wa.plantillas("resumen_diario")[0].parametros![2];
+    expect(aviso.length).toBeLessThanOrEqual(220);
+    expect(aviso.startsWith("Hoy le dolió la rodilla")).toBe(true);
+    const [guardado] = await db.select().from(resumenes).where(eq(resumenes.id, r!.id));
+    expect(guardado.revisadoPor).toBe("Daniel");
+    expect(guardado.textoFinal).toBe(largo);
+  });
+
+  it("si la familia pidió solo lo importante, un día normal queda en la página sin mandar mensaje", async () => {
+    const { familias } = await import("../src/lib/db/schema");
+    await db.update(familias).set({ avisos: "importante" });
+    const d = deps(db);
+    await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.i1", texto: "Bien" });
+    const [p] = await db.select().from(platicas);
+    const r = await cerrarPlatica(d, p.id);
+    expect(r!.estado).toBe("enviado");
+    expect(d.wa.plantillas("resumen_diario")).toHaveLength(0);
+
+    // Algo importante sí llega
+    d.ia.importante = true;
+    d.ia.aviso = "Le contó que el doctor le cambió la pastilla.";
+    await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.i2", texto: "Oiga, el doctor me cambió la pastilla" });
+    await cerrarPlatica(d, p.id);
+    expect(d.wa.plantillas("resumen_diario")[0].parametros![2]).toBe("Actualización: Le contó que el doctor le cambió la pastilla.");
   });
 
   it("la memoria de ayer llega a la plática de hoy", async () => {
@@ -222,7 +256,8 @@ describe("mejoras de la plática", () => {
     await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.u1", texto: "Bien" });
     const [p] = await db.select().from(platicas);
     const r = await cerrarPlatica(d, p.id);
-    await enviarResumen(d, r!.id, "Amaneció bien y platicó un rato.", "Daniel");
+    expect(r!.estado).toBe("enviado");
+    d.ia.nivelResumen = "amarillo";
     await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.u2", texto: "Oiga, me duele la cabeza" });
     const nuevo = await cerrarPlatica(d, p.id);
     expect(nuevo!.estado).toBe("pendiente");
@@ -250,6 +285,19 @@ describe("mensajes de la familia", () => {
     // Al día siguiente ya no se repite
     await procesarEntrante({ ...d, ahora: () => new Date("2026-11-03T15:30:00Z") }, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.f3", texto: "Hola" });
     expect(d.ia.ultimoPerfil?.recados).toEqual([]);
+  });
+
+  it("la familia elige por WhatsApp si quiere el resumen diario o solo lo importante", async () => {
+    const { familias } = await import("../src/lib/db/schema");
+    const d = deps(db);
+    expect(await procesarEntrante(d, { tipo: "texto", de: "13105551234", id: "wamid.p1", texto: "Solo lo importante, por favor" })).toBe("avisos");
+    expect((await db.select().from(familias))[0].avisos).toBe("importante");
+    expect(d.wa.textosA("13105551234")[0]).toContain("solo te escribimos cuando haya algo importante");
+    expect(await procesarEntrante(d, { tipo: "texto", de: "13105551234", id: "wamid.p2", texto: "Todos los días" })).toBe("avisos");
+    expect((await db.select().from(familias))[0].avisos).toBe("diario");
+    // Una pregunta que menciona "todos los días" no cambia nada
+    expect(await procesarEntrante(d, { tipo: "texto", de: "13105551234", id: "wamid.p3", texto: "¿Se toma su pastilla todos los días?" })).toBe("estado");
+    expect((await db.select().from(familias))[0].avisos).toBe("diario");
   });
 
   it("una pregunta de la familia te llega a ti y se le contesta con cortesía", async () => {

@@ -38,7 +38,7 @@ export default async function Pendientes() {
 
       {filas.length === 0 && (
         <div className={estilos.vacio}>
-          <p style={{ margin: "0 auto" }}>Cuando termine una plática, su resumen aparece aquí para que lo revises antes de enviarlo.</p>
+          <p style={{ margin: "0 auto" }}>Aquí aparecen los resúmenes delicados (amarillos y rojos) para que los leas antes de que salgan. Los días normales se mandan solos.</p>
         </div>
       )}
 
@@ -77,6 +77,7 @@ export default async function Pendientes() {
               </div>
               <div>
                 {chips.length > 0 && <div className={estilos.datos}>{chips.map((c) => <span key={c} className={estilos.dato}>{c}</span>)}</div>}
+                {resumen.aviso && <p className={estilos.meta}><b>Aviso corto por WhatsApp:</b> {resumen.aviso} <i>(si cambias el texto de abajo, el aviso sale de tu versión)</i></p>}
                 <RevisarResumen id={resumen.id} borrador={resumen.textoBorrador} />
                 <form action={descartarResumen} style={{ marginTop: 10 }}>
                   <input type="hidden" name="id" value={resumen.id} />

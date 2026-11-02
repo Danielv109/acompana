@@ -165,7 +165,7 @@ export function instruccionesResumen(p: { comoLlamarle: string; nombreFamiliar: 
   const citas = p.citasPorPreguntar.length
     ? `\n## Citas médicas recientes\n${p.citasPorPreguntar.map((c) => `- ${c}`).join("\n")}\nSi ella contó cómo le fue o qué le dijo el doctor, anótalo en "loQueContoDelDoctor" con sus palabras, sin interpretar.\n`
     : "";
-  return `Lees la plática de hoy (${p.fechaLarga}) con ${p.comoLlamarle} y haces tres cosas: el resumen para ${p.nombreFamiliar}, que vive lejos y lo lee en WhatsApp; las notas para recordar; y, si contó una historia de su vida, guardarla.
+  return `Lees la plática de hoy (${p.fechaLarga}) con ${p.comoLlamarle} y haces tres cosas: el resumen para ${p.nombreFamiliar}, que vive lejos (un aviso corto que le llega por WhatsApp y el resumen completo que ve en la página de su mamá); las notas para recordar; y, si contó una historia de su vida, guardarla.
 
 ## Cómo es un buen resumen
 - De 3 a 5 frases, cálido y concreto, en español de México. Le hablas de tú a ${p.nombreFamiliar}.
@@ -180,6 +180,11 @@ export function instruccionesResumen(p: { comoLlamarle: string; nombreFamiliar: 
 - No repitas los chismes con nombres y detalles de otras personas; basta con decir de qué platicó.
 - Si no contestó o casi no platicó, dilo con honestidad y sin dramatizar.
 - Sin emojis, sin listas, sin saludos largos.
+
+## El aviso corto (lo que llega por WhatsApp)
+- 1 o 2 frases, máximo 200 caracteres. Lo más importante primero: cómo está y, si hay, lo que hay que atender.
+- Se tiene que entender solo, sin leer el resumen. Ejemplo: "Amaneció contenta; ya se tomó su pastilla. Le duele un poco la rodilla, pregúntale cómo sigue."
+- "importante" es verdadero si hay algo que la familia querría saber hoy aunque solo pidió avisos importantes: salud, ánimo bajo, no comió o no tomó medicina, lo que dijo el doctor, un recado para la familia o una noticia grande. Un día normal y bonito no es importante.
 
 ## Nivel
 - "rojo": hubo una posible emergencia.
@@ -202,7 +207,9 @@ export const herramientaResumir = {
   input_schema: {
     type: "object" as const,
     properties: {
-      resumen: { type: "string", description: "El texto que se le enviará a la familia." },
+      resumen: { type: "string", description: "El resumen completo que la familia ve en la página (3 a 5 frases)." },
+      aviso: { type: "string", description: "Versión corta para WhatsApp: 1 o 2 frases, máximo 200 caracteres." },
+      importante: { type: "boolean", description: "Verdadero si hay algo que la familia querría saber hoy." },
       nivel: { type: "string", enum: ["verde", "amarillo", "rojo"] },
       medicinaTomada: { type: "string", enum: ["si", "no", "no_se_sabe"] },
       animo: { type: "string", enum: ["bien", "regular", "decaido", "no_se_sabe"] },
@@ -236,6 +243,6 @@ export const herramientaResumir = {
         required: ["titulo", "texto", "mensajes"],
       },
     },
-    required: ["resumen", "nivel", "medicinaTomada", "animo", "comio", "temasDeSalud", "cosasBonitas", "pendientes", "memoria", "personas", "loQueContoDelDoctor"],
+    required: ["resumen", "aviso", "importante", "nivel", "medicinaTomada", "animo", "comio", "temasDeSalud", "cosasBonitas", "pendientes", "memoria", "personas", "loQueContoDelDoctor"],
   },
 };

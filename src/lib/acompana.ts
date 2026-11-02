@@ -183,13 +183,35 @@ async function aTexto(d: Deps, m: Entrante): Promise<string> {
 }
 
 /** Un familiar escribió al número de Acompaña: o es un recado para ella, o una pregunta para nosotros. */
-async function procesarDeFamiliar(d: Deps, contacto: typeof contactos.$inferSelect, m: Entrante): Promise<"recado" | "familia" | "estado"> {
+/** El mensaje completo tiene que ser la instrucción (para no confundir "¿toma su pastilla todos los días?"). */
+export const COMANDOS_AVISOS = {
+  importante: /^(quiero |prefiero |mejor |m[aá]ndame |avisame |av[ií]same )?(recibir )?(s[oó]lo|nada m[aá]s) (lo )?importante|^menos mensajes/i,
+  diario: /^(quiero |prefiero |mejor |m[aá]ndame )?(recibir(lo)? |el resumen )?(todos los d[ií]as|cada d[ií]a|diario)$/i,
+};
+const comoComando = (t: string) => t.toLowerCase().replace(/[¿?¡!.,]/g, "").replace(/\s+/g, " ").trim();
+
+async function procesarDeFamiliar(d: Deps, contacto: typeof contactos.$inferSelect, m: Entrante): Promise<"recado" | "familia" | "estado" | "avisos"> {
   const [adulto] = await d.db.select().from(adultos).where(eq(adultos.familiaId, contacto.familiaId));
   const texto = await aTexto(d, m);
   await d.wa.marcarLeido(m.id);
   const deQuien = `${contacto.nombre} (${contacto.relacion})`;
-  const pregunta = /c[oó]mo (va|est[aá]|sigue|anda|amaneci[oó])|novedades|resumen|lo [uú]ltimo|medicin|pastilla|cita|qu[eé] tal|surt/i;
-  if (adulto && pregunta.test(texto) && !/^\s*recado/i.test(texto)) {
+  const esRecado = /^\s*recado/i.test(texto);
+
+  // "Solo lo importante" / "Todos los días": cambia qué resúmenes le llegan
+  const orden = comoComando(texto);
+  const preferencia = orden.length <= 60
+    ? (COMANDOS_AVISOS.importante.test(orden) ? "importante" : COMANDOS_AVISOS.diario.test(orden) ? "diario" : null)
+    : null;
+  if (adulto && preferencia) {
+    await d.db.update(familias).set({ avisos: preferencia }).where(eq(familias.id, contacto.familiaId));
+    await d.wa.enviarTexto(contacto.telefono, preferencia === "importante"
+      ? `Listo, ${contacto.nombre}. Desde hoy solo te escribimos cuando haya algo importante de ${adulto.comoLlamarle}. Lo de cada día sigue en su página, y las alertas y recordatorios te llegan siempre. Si quieres volver a recibirlo diario, escribe "todos los días".`
+      : `Listo, ${contacto.nombre}. Desde hoy te mandamos el resumen de ${adulto.comoLlamarle} todos los días. Si prefieres menos mensajes, escribe "solo lo importante".`);
+    return "avisos";
+  }
+
+  const pregunta = /c[oó]mo (va|est[aá]|sigue|anda|amaneci[oó])|novedades|resumen|lo [uú]ltimo|medicin|pastilla|cita|qu[eé] tal|surt|detalle|enlace|link|p[aá]gina/i;
+  if (adulto && pregunta.test(texto) && !esRecado) {
     const { fecha } = ahoraEnZona(adulto.zonaHoraria, d.ahora());
     await d.wa.enviarTexto(contacto.telefono, await estadoParaFamilia(d.db, adulto, fecha));
     return "estado";
@@ -217,7 +239,7 @@ async function procesarDeFamiliar(d: Deps, contacto: typeof contactos.$inferSele
 /** Procesa un mensaje que llegó por WhatsApp. */
 export async function procesarEntrante(
   d: Deps, m: Entrante,
-): Promise<"ignorado" | "duplicado" | "procesado" | "agrupado" | "recado" | "familia" | "estado"> {
+): Promise<"ignorado" | "duplicado" | "procesado" | "agrupado" | "recado" | "familia" | "estado" | "avisos"> {
   const [adulto] = await d.db.select().from(adultos).where(eq(adultos.telefono, m.de));
   if (!adulto) {
     const [contacto] = await d.db.select().from(contactos).where(eq(contactos.telefono, m.de)).orderBy(asc(contactos.orden)).limit(1);
@@ -299,7 +321,7 @@ export async function procesarEntrante(
   return "procesado";
 }
 
-/** Termina la plática y deja listo el resumen para que una persona lo revise. */
+/** Termina la plática, guarda el resumen y, si no es delicado, se lo manda a la familia. */
 export async function cerrarPlatica(d: Deps, platicaId: string) {
   const [p] = await d.db.select().from(platicas).where(eq(platicas.id, platicaId));
   if (!p) return null;
@@ -318,9 +340,11 @@ export async function cerrarPlatica(d: Deps, platicaId: string) {
 
   // Si ya se había mandado un resumen de hoy, este se marca como actualización
   const [previo] = await d.db.select().from(resumenes).where(eq(resumenes.platicaId, platicaId));
-  const textoBorrador = previo?.estado === "enviado" ? `Actualización: ${r.resumen}` : r.resumen;
+  const esActualizacion = previo?.estado === "enviado";
+  const textoBorrador = esActualizacion ? `Actualización: ${r.resumen}` : r.resumen;
+  const aviso = r.aviso ? (esActualizacion ? `Actualización: ${r.aviso}` : r.aviso) : null;
   const valores = {
-    platicaId, nivel: r.nivel, textoBorrador, datos: r.datos, memoria: r.memoria.join("\n"), estado: "pendiente" as const,
+    platicaId, nivel: r.nivel, textoBorrador, aviso, importante: r.importante, datos: r.datos, memoria: r.memoria.join("\n"), estado: "pendiente" as const,
     textoFinal: null, revisadoPor: null, enviadoEn: null,
   };
   const [resumen] = await d.db.insert(resumenes).values(valores)
@@ -335,7 +359,25 @@ export async function cerrarPlatica(d: Deps, platicaId: string) {
     await d.db.update(recados).set({ entregadoEn: d.ahora(), platicaId })
       .where(and(eq(recados.adultoId, p.adultoId), isNull(recados.entregadoEn), lte(recados.creadoEn, ultimaRespuesta.creadoEn)));
   }
-  return resumen;
+  return (await enviarSiNoEsDelicado(d, resumen)) ?? resumen;
+}
+
+/** ¿Este resumen necesita que una persona lo lea antes de salir? */
+export function necesitaRevision(nivel: "verde" | "amarillo" | "rojo") {
+  const modo = env.revisarResumenes;
+  return modo === "todos" || (modo === "delicados" && nivel !== "verde");
+}
+
+async function enviarSiNoEsDelicado(d: Deps, resumen: typeof resumenes.$inferSelect) {
+  if (necesitaRevision(resumen.nivel)) return null;
+  try {
+    await enviarResumen(d, resumen.id, resumen.textoBorrador, "automático");
+    const [r] = await d.db.select().from(resumenes).where(eq(resumenes.id, resumen.id));
+    return r;
+  } catch (e) {
+    console.error("No se pudo mandar el resumen solo; queda para revisar en el panel", e);
+    return null;
+  }
 }
 
 /** Lo que pasa cuando no contestó en todo el día. */
@@ -343,7 +385,7 @@ async function marcarSinRespuesta(d: Deps, p: typeof platicas.$inferSelect, adul
   await d.db.update(platicas).set({ estado: "sin_respuesta", terminadaEn: d.ahora() }).where(eq(platicas.id, p.id));
   const texto = `Hoy ${adulto.comoLlamarle} no contestó a ninguno de los ${p.intentos} saludos. Puede ser algo sencillo, como el teléfono sin batería o en silencio, pero te sugerimos llamarle o pedirle a alguien cercano que pase a verla.`;
   await d.db.insert(resumenes).values({
-    platicaId: p.id, nivel: "amarillo", textoBorrador: texto, memoria: "",
+    platicaId: p.id, nivel: "amarillo", textoBorrador: texto, aviso: texto, importante: true, memoria: "",
     datos: { medicinaTomada: "no_se_sabe", animo: "no_se_sabe", comio: "no_se_sabe", temasDeSalud: [], cosasBonitas: [], pendientes: ["Confirmar que esté bien"] },
   }).onConflictDoNothing();
   await crearAlerta(d, { adultoId: adulto.id, platicaId: p.id, nivel: "amarillo", motivo: "No contestó en todo el día", frase: "" });
@@ -431,26 +473,50 @@ export async function tick(d: Deps) {
 
 // ─── Envío a la familia ──────────────────────────────────────
 
-/** Manda el resumen aprobado a la familia. Solo se llama desde el panel, después de revisarlo. */
+/** Recorta un texto a sus primeras frases completas, sin pasar de "max" caracteres. */
+export function recortarAviso(texto: string, max = 220) {
+  const limpio = texto.replace(/\s+/g, " ").trim();
+  if (limpio.length <= max) return limpio;
+  const frases = limpio.match(/[^.!?]+[.!?]+/g) ?? [];
+  let salida = "";
+  for (const f of frases) {
+    if ((salida + f).trim().length > max) break;
+    salida += f;
+  }
+  return salida.trim() || `${limpio.slice(0, max - 1).replace(/\s+\S*$/, "")}…`;
+}
+
+/**
+ * Publica el resumen en la página de la familia y les manda el aviso corto por WhatsApp.
+ * Si la familia pidió "solo lo importante" y hoy fue un día normal, queda en la página sin mandar mensaje.
+ */
 export async function enviarResumen(d: Deps, resumenId: string, textoFinal: string, revisadoPor: string) {
   const [r] = await d.db.select().from(resumenes).where(eq(resumenes.id, resumenId));
   if (!r) throw new Error("No existe ese resumen.");
   if (r.estado === "enviado") return { enviados: 0, yaEnviado: true };
   const [p] = await d.db.select().from(platicas).where(eq(platicas.id, r.platicaId));
   const [a] = await d.db.select().from(adultos).where(eq(adultos.id, p.adultoId));
+  const [f] = await d.db.select().from(familias).where(eq(familias.id, a.familiaId));
   const cs = await d.db.select().from(contactos).where(and(eq(contactos.familiaId, a.familiaId), eq(contactos.recibeResumen, true)));
+
+  // Si una persona cambió el texto, el aviso sale de su versión
+  const editado = textoFinal.trim() !== r.textoBorrador.trim();
+  const aviso = recortarAviso(!editado && r.aviso ? r.aviso : textoFinal);
+  const mandarPorWhatsApp = f?.avisos !== "importante" || r.importante || r.nivel !== "verde";
 
   const token = await asegurarToken(d.db, a.familiaId);
   let enviados = 0;
-  for (const c of cs) {
-    try {
-      await d.wa.enviarPlantilla(c.telefono, env.plantillaResumen, [a.comoLlamarle, fechaLarga(p.fecha), limpiarParametro(textoFinal), token]);
-      enviados++;
-    } catch (e) {
-      console.error(`No se pudo mandar el resumen a ${c.nombre}`, e);
+  if (mandarPorWhatsApp) {
+    for (const c of cs) {
+      try {
+        await d.wa.enviarPlantilla(c.telefono, env.plantillaResumen, [a.comoLlamarle, fechaLarga(p.fecha), limpiarParametro(aviso), token]);
+        enviados++;
+      } catch (e) {
+        console.error(`No se pudo mandar el resumen a ${c.nombre}`, e);
+      }
     }
+    if (enviados === 0 && cs.length > 0) throw new Error("No se pudo mandar el resumen a ningún contacto. Revisa la plantilla de WhatsApp.");
   }
-  if (enviados === 0 && cs.length > 0) throw new Error("No se pudo mandar el resumen a ningún contacto. Revisa la plantilla de WhatsApp.");
-  await d.db.update(resumenes).set({ estado: "enviado", textoFinal, revisadoPor, enviadoEn: d.ahora() }).where(eq(resumenes.id, resumenId));
+  await d.db.update(resumenes).set({ estado: "enviado", textoFinal, aviso, revisadoPor, enviadoEn: d.ahora() }).where(eq(resumenes.id, resumenId));
   return { enviados, yaEnviado: false };
 }

@@ -3,7 +3,7 @@
 Compañía por WhatsApp para personas mayores, y todo lo de ella al día para su familia.
 
 - **Para ella:** una voz amable con quien platicar a gusto a cualquier hora, que se acuerda de su gente, le da seguimiento a sus chismes y, si ella quiere, guarda sus historias con su voz.
-- **Para el hijo:** la página privada de su mamá (medicinas, citas, lo que contó del doctor, historias), recordatorios antes de que se acabe una medicina y un día antes de cada cita, el resumen diario revisado por una persona y avisos si algo preocupa.
+- **Para el hijo:** la página privada de su mamá (medicinas, citas, lo que contó del doctor, historias), recordatorios antes de que se acabe una medicina y un día antes de cada cita, un aviso corto por WhatsApp con enlace a los detalles (cada día o solo cuando hay algo importante, como él prefiera) y avisos si algo preocupa.
 
 Etapa 2 (semi-automática): la IA platica, resume y detecta alertas; **nada le llega a la familia sin que tú lo apruebes**, salvo las alertas rojas confirmadas.
 
@@ -31,7 +31,7 @@ Etapa 2 (semi-automática): la IA platica, resume y detecta alertas; **nada le l
 **Cómo decide las alertas**
 
 - **Roja** (caída, dolor de pecho, falta de aire, señales de embolia, habla de quitarse la vida, robo): te llega a ti al instante. Si la IA también lo ve rojo, le llega a la familia y al contacto cercano al instante. Si solo lo detectan las reglas, te llega primero a ti para que lo confirmes. **La IA nunca llama al 911 sola.**
-- **Amarilla** (dolor, mareo, no comió, tristeza, posible fraude, no contestó en el día): te llega a ti; la familia se entera en el resumen que apruebas.
+- **Amarilla** (dolor, mareo, no comió, tristeza, posible fraude, no contestó en el día): te llega a ti; la familia se entera en el resumen, que revisas antes de que salga.
 - **Verde**: va en el resumen.
 
 ---
@@ -131,7 +131,7 @@ Por eso las respuestas de la IA son cortas: además de ser mejores para ella, cu
 1. **Familia nueva**: te llega un WhatsApp. Agenda la videollamada de bienvenida.
 2. **Videollamada**: deja su teléfono listo (volumen, número guardado como "Acompaña"), practica una nota de voz y pídele su consentimiento por escrito. Regístralo en **Panel → Familias → Registrar y activar llamadas**. Sin consentimiento no hay llamadas.
 3. **Cada mañana**: el saludo sale solo a la hora elegida. Si no contesta, se reintenta a las 2 y 4 horas; si sigue sin contestar, te llega una alerta.
-4. **Resúmenes**: en **Panel → Resúmenes por revisar**, lee la plática, corrige el resumen y aprueba. Primero aparecen rojos y amarillos.
+4. **Resúmenes**: los días normales salen solos. Los amarillos y rojos esperan en **Panel → Resúmenes por revisar**: lee la plática, corrige el resumen y aprueba. Con `REVISAR_RESUMENES=todos` revisas todos; con `ninguno`, ninguno.
 5. **Alertas**: en **Panel → Alertas** tienes el protocolo, los teléfonos y la ficha de emergencia. Anota qué hiciste y márcala como atendida.
 6. **Medicinas y citas**: las registra la familia en la página de su mamá. A ella nunca se le habla de que se le acaba una medicina; el aviso le llega al hijo 5 días antes. Un día antes de cada cita el hijo recibe un recordatorio, y 3 horas después de la cita (si ella escribió en las últimas 23 horas) la IA le pregunta cómo le fue; si no, se lo pregunta en la siguiente plática.
 7. **Historias con su voz**: la IA le pide permiso cada vez. Solo si dice que sí se guarda en su página. Asegúrate de que el consentimiento que firma en la bienvenida mencione esto.

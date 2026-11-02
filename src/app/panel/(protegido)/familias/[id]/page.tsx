@@ -71,6 +71,7 @@ export default async function Familia({ params }: { params: Promise<{ id: string
                 <dt>WhatsApp</dt><dd>{telefonoBonito(adulto.telefono)}</dd>
                 <dt>Saludo diario</dt><dd>{adulto.horaSaludo} ({adulto.zonaHoraria})</dd>
                 <dt>Responde por</dt><dd>{adulto.canal === "voz" ? "Notas de voz" : "Texto"}</dd>
+                <dt>Resúmenes por WhatsApp</dt><dd>{familia.avisos === "importante" ? "Solo lo importante" : "Todos los días"}</dd>
                 <dt>Consentimiento</dt><dd>{adulto.consentimientoEn ? `${adulto.consentimientoEn.toLocaleDateString("es-MX")} · ${adulto.consentimientoMetodo}` : "Pendiente"}</dd>
               </dl>
               {adulto.sobreElla && <p style={{ marginTop: 14 }}><b>Sobre ella:</b> {adulto.sobreElla}</p>}

@@ -7,7 +7,7 @@ import { ahoraEnZona, cuandoEs, fechaLarga } from "@/lib/tiempo";
 import { diasRestantes, RECORDATORIOS, textoDiasRestantes } from "@/lib/ficha";
 import { enlaceWhatsApp, marca } from "@/lib/marca";
 import { familiaPorToken } from "./datos";
-import { agregarCita, agregarMedicina, guardarSurtido, mandarRecado, quitarCita, quitarMedicina, yaLaSurti } from "./acciones";
+import { agregarCita, agregarMedicina, cambiarAvisos, guardarSurtido, mandarRecado, quitarCita, quitarMedicina, yaLaSurti } from "./acciones";
 import e from "./mama.module.css";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +53,15 @@ export default async function PaginaMama({ params }: { params: Promise<{ token: 
           ) : (
             <p className={e.vacio}>Aquí vas a ver el resumen más reciente en cuanto empiecen sus pláticas.</p>
           )}
+          <form action={cambiarAvisos} className={e.avisos}>
+            {oculto}
+            <p className={e.avisosTitulo}>¿Cuándo te escribimos por WhatsApp?</p>
+            <div className={e.avisosOpciones}>
+              <button type="submit" name="avisos" value="diario" aria-pressed={familia.avisos === "diario"} className={e.opcion}>Todos los días</button>
+              <button type="submit" name="avisos" value="importante" aria-pressed={familia.avisos === "importante"} className={e.opcion}>Solo si hay algo importante</button>
+            </div>
+            <p className={e.detalle}>Las alertas y los recordatorios te llegan siempre. Lo de cada día queda aquí.</p>
+          </form>
         </section>
 
         <section className={e.bloque} aria-labelledby="medicinas">

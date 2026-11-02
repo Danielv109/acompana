@@ -31,6 +31,15 @@ export const env = {
   get ttsModelo() { return opcional("OPENAI_TTS_MODEL", "gpt-4o-mini-tts"); },
   get ttsVoz() { return opcional("OPENAI_TTS_VOICE", "marin"); },
 
+  /**
+   * Qué resúmenes revisa una persona antes de que salgan:
+   * "delicados" (por defecto): solo amarillos y rojos; los días normales salen solos.
+   * "todos": todos esperan aprobación en el panel. "ninguno": todos salen solos.
+   */
+  get revisarResumenes(): "delicados" | "todos" | "ninguno" {
+    const v = process.env.REVISAR_RESUMENES;
+    return v === "todos" || v === "ninguno" ? v : "delicados";
+  },
   get vozProveedor(): "azure" | "openai" { return process.env.VOZ_PROVEEDOR === "openai" ? "openai" : "azure"; },
   get azureKey() { return requerida("AZURE_SPEECH_KEY"); },
   get azureRegion() { return requerida("AZURE_SPEECH_REGION"); },

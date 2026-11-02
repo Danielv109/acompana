@@ -46,3 +46,15 @@
 .audio { width: 100%; margin: 12px 0 4px; }
 .texto { white-space: pre-line; margin-top: 10px; }
 .pie { color: var(--tinta-suave); font-size: 0.95rem; padding: 0 4px; }
+
+/* Cuándo te escribimos */
+.avisos { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--linea); }
+.avisosTitulo { font-weight: 700; margin: 0 0 10px; }
+.avisosOpciones { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.opcion {
+  font: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  min-height: 44px; padding: 8px 16px; border-radius: 999px;
+  border: 2px solid var(--linea); background: var(--papel); color: var(--tinta);
+}
+.opcion[aria-pressed="true"] { border-color: var(--pino); background: var(--pino); color: #fff; }
+.opcion:focus-visible { outline: 3px solid var(--cempasuchil); outline-offset: 2px; }

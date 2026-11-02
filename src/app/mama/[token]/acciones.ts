@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
-import { citas, medicinas, recados } from "@/lib/db/schema";
+import { citas, familias, medicinas, recados } from "@/lib/db/schema";
 import { ahoraEnZona } from "@/lib/tiempo";
 import { familiaPorToken } from "./datos";
 
@@ -80,5 +80,13 @@ export async function mandarRecado(form: FormData) {
   const contenido = texto(form, "recado", 500);
   if (contenido.length < 3) return;
   await getDb().insert(recados).values({ adultoId: adulto.id, deQuien: texto(form, "deQuien", 60) || familia.nombreContacto, texto: contenido });
+  revalidatePath(ruta);
+}
+
+export async function cambiarAvisos(form: FormData) {
+  const { familia, ruta } = await contexto(form);
+  const avisos = texto(form, "avisos", 12);
+  if (avisos !== "diario" && avisos !== "importante") return;
+  await getDb().update(familias).set({ avisos }).where(eq(familias.id, familia.id));
   revalidatePath(ruta);
 }
