@@ -44,14 +44,24 @@ export class IAFalsa implements IA {
   ultimoHistorial: Turno[] = [];
   async responder(perfil: Perfil, historial: Turno[]) { this.ultimoPerfil = perfil; this.ultimoHistorial = historial; return this.respuesta; }
   async clasificar() { if (this.fallarClasificacion) throw new Error("sin conexión"); return this.clasificacion; }
-  async resumir(perfil: Perfil, historial: Turno[]) {
+  async resumir(perfil: Perfil, historial: Turno[], contexto?: { citasPorPreguntar: string[] }) {
+    this.ultimoContextoResumen = contexto ?? null;
     return {
       resumen: `Resumen de ${perfil.comoLlamarle}: ${historial.length} mensajes.\nTodo tranquilo.`,
       nivel: "verde" as Nivel,
       memoria: ["Mañana va al mercado"],
       datos: { medicinaTomada: "si" as const, animo: "bien" as const, comio: "si" as const, temasDeSalud: [], cosasBonitas: [], pendientes: [] },
+      personas: this.personas,
+      loQueContoDelDoctor: this.loQueConto,
+      historia: this.historia,
     };
   }
+  personas: Array<{ nombre: string; relacion: string; nota: string; cumpleanos?: string }> = [];
+  loQueConto = "";
+  historia: { titulo: string; texto: string; mensajes: number[] } | null = null;
+  ultimoContextoResumen: { citasPorPreguntar: string[] } | null = null;
+  iniciados: string[] = [];
+  async iniciar(_perfil: Perfil, _historial: Turno[], motivo: string) { this.iniciados.push(motivo); return `¿Cómo le fue? (${motivo})`; }
 }
 
 export function reloj(iso: string) {

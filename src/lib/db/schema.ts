@@ -1,6 +1,23 @@
 import {
-  pgTable, uuid, text, timestamp, boolean, integer, date, jsonb, uniqueIndex, index,
+  pgTable, uuid, text, timestamp, boolean, integer, date, jsonb, uniqueIndex, index, customType,
 } from "drizzle-orm/pg-core";
+import { randomBytes } from "node:crypto";
+
+/** Audio guardado en la base de datos (notas de voz cortas, decenas de KB). */
+const bytea = customType<{ data: Buffer; driverData: Buffer | Uint8Array | string }>({
+  dataType: () => "bytea",
+  toDriver: (valor) => valor,
+  // Según el controlador, llega como Buffer, Uint8Array o texto hexadecimal ("\\x6175...")
+  fromDriver: (valor) => {
+    if (typeof valor === "string") return Buffer.from(valor.startsWith("\\x") ? valor.slice(2) : valor, "hex");
+    return Buffer.from(valor);
+  },
+});
+
+/** Enlace privado de la página de la familia: imposible de adivinar. */
+export function nuevoToken(): string {
+  return randomBytes(18).toString("base64url");
+}
 
 /** La familia que contrata (normalmente el hijo o la hija). */
 export const familias = pgTable("familias", {
@@ -14,8 +31,10 @@ export const familias = pgTable("familias", {
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
   pruebaTerminaEn: timestamp("prueba_termina_en", { withTimezone: true }),
+  /** Enlace privado de "la página de mamá": /mama/<token> */
+  tokenPagina: text("token_pagina").$defaultFn(nuevoToken),
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [uniqueIndex("familias_token_idx").on(t.tokenPagina)]);
 
 /** Personas que reciben resúmenes o alertas, o que pueden acudir en persona. */
 export const contactos = pgTable("contactos", {
@@ -66,6 +85,10 @@ export const medicinas = pgTable("medicinas", {
   nombre: text("nombre").notNull(),
   dosis: text("dosis").notNull().default(""),
   horario: text("horario").notNull().default(""), // texto libre: "en la mañana", "8 y 20 h"
+  // Lo llena la familia: con esto le avisamos al hijo antes de que se acabe (a ella nunca)
+  ultimoSurtido: date("ultimo_surtido"),
+  duraDias: integer("dura_dias"),
+  recordadoEn: timestamp("recordado_en", { withTimezone: true }),
 });
 
 /** Una plática diaria: el saludo de la mañana y todo lo que se habló ese día. */
@@ -87,6 +110,9 @@ export const mensajes = pgTable("mensajes", {
   tipo: text("tipo", { enum: ["texto", "audio"] }).notNull(),
   texto: text("texto").notNull(),
   waMessageId: text("wa_message_id"),
+  // Su nota de voz original. Se borra a los 30 días, salvo que forme parte de una historia.
+  audio: bytea("audio"),
+  audioMime: text("audio_mime"),
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("mensajes_wa_idx").on(t.waMessageId),
@@ -141,3 +167,41 @@ export const recados = pgTable("recados", {
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
   entregadoEn: timestamp("entregado_en", { withTimezone: true }),
 }, (t) => [index("recados_adulto_idx").on(t.adultoId)]);
+
+/** Citas médicas que registra la familia. Después de la cita, la IA le pregunta cómo le fue. */
+export const citas = pgTable("citas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  adultoId: uuid("adulto_id").notNull().references(() => adultos.id, { onDelete: "cascade" }),
+  fecha: date("fecha").notNull(),
+  hora: text("hora").notNull().default(""), // HH:MM o vacío
+  conQuien: text("con_quien").notNull(), // "Cardiólogo, Dr. Ramírez"
+  lugar: text("lugar").notNull().default(""),
+  loQueConto: text("lo_que_conto"), // lo que ella contó del doctor
+  recordatorioEnviadoEn: timestamp("recordatorio_enviado_en", { withTimezone: true }),
+  seguimiento: text("seguimiento", { enum: ["pendiente", "enviado", "hecho"] }).notNull().default("pendiente"),
+  creadaPor: text("creada_por").notNull().default(""),
+  creadaEn: timestamp("creada_en", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("citas_adulto_fecha_idx").on(t.adultoId, t.fecha)]);
+
+/** Su gente: comadres, vecinas, nietos. La IA se acuerda de ellos y del último chisme. */
+export const personas = pgTable("personas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  adultoId: uuid("adulto_id").notNull().references(() => adultos.id, { onDelete: "cascade" }),
+  nombre: text("nombre").notNull(),
+  relacion: text("relacion").notNull().default(""),
+  notas: text("notas").notNull().default(""), // lo último que contó de esta persona
+  cumpleanos: text("cumpleanos"), // MM-DD
+  recordadoAnio: integer("recordado_anio"),
+  actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("personas_adulto_nombre_idx").on(t.adultoId, t.nombre)]);
+
+/** Historias de su vida, con su voz. Para la familia, para siempre. */
+export const historias = pgTable("historias", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  adultoId: uuid("adulto_id").notNull().references(() => adultos.id, { onDelete: "cascade" }),
+  platicaId: uuid("platica_id").references(() => platicas.id, { onDelete: "set null" }),
+  titulo: text("titulo").notNull(),
+  texto: text("texto").notNull(),
+  audios: jsonb("audios").$type<Array<{ mime: string; base64: string }>>().notNull().default([]),
+  creadaEn: timestamp("creada_en", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("historias_adulto_idx").on(t.adultoId)]);

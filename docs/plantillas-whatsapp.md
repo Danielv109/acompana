@@ -2,7 +2,7 @@
 
 WhatsApp solo deja que **tú inicies** una conversación con plantillas aprobadas por Meta. Cuando la persona responde, se abre una ventana de 24 horas para platicar libremente (ahí van las notas de voz).
 
-Crea estas 5 plantillas en **WhatsApp Manager → Plantillas de mensajes**, idioma **Español (MEX)** (`es_MX`), categoría **Utilidad**. Los nombres deben coincidir con los de tu `.env`.
+Crea estas 7 plantillas en **WhatsApp Manager → Plantillas de mensajes**, idioma **Español (MEX)** (`es_MX`), categoría **Utilidad**. Los nombres deben coincidir con los de tu `.env`.
 
 Reglas de Meta que ya cuidamos: las variables (`{{1}}`, `{{2}}`…) no pueden ir al inicio ni al final del texto, y el valor de una variable no puede tener saltos de línea (la app los quita sola).
 
@@ -33,9 +33,11 @@ Resumen de {{1}} del {{2}}:
 
 {{3}}
 
-Revisado por el equipo de Acompaña. Para mandarle un recado, responde empezando con la palabra Recado.
+Todo lo de ella, en su página: https://acompana.mx/mama/{{4}} (solo para tu familia). Para mandarle un recado, responde empezando con la palabra Recado.
 ```
-Ejemplo: `{{1}}` = Doña Rosa · `{{2}}` = lunes 3 de noviembre · `{{3}}` = Amaneció contenta y ya se tomó su pastilla. Contó que hoy viene su comadre a comer.
+Ejemplo: `{{1}}` = Doña Rosa · `{{2}}` = lunes 3 de noviembre · `{{3}}` = Amaneció contenta y ya se tomó su pastilla. · `{{4}}` = Xy12ab34Cd56ef78Gh90ij12
+
+> Cambia `https://acompana.mx` por tu dominio real (el mismo de `APP_URL`) antes de mandarla a aprobar.
 
 ## 3. `alerta_familia` (a la familia, solo en alerta roja)
 
@@ -50,3 +52,17 @@ Ejemplo: `{{1}}` = Doña Rosa · `{{2}}` = Posible caída · `{{3}}` = Me caí e
 Aviso de Acompaña: {{1}} (mensaje automático)
 ```
 Ejemplo: `{{1}}` = ALERTA ROJA: Doña Rosa (Rosa Martínez). Posible caída.
+
+## 5. `recordatorio_familia` (al hijo: medicinas, citas y cumpleaños)
+
+```
+Recordatorio sobre {{1}}: {{2}} Si quieres ver todo, pregunta "¿cómo va?" en este chat.
+```
+Ejemplo: `{{1}}` = Doña Rosa · `{{2}}` = al Losartán le quedan unos 5 días. ¿Ya tienes quién se lo surta? Cuando lo tenga, márcalo en su página.
+
+## 6. `bienvenida_familia` (al registrarse)
+
+```
+Hola {{1}}, ya registramos a {{2}} en Acompaña. Esta es su página, donde puedes agregar sus medicinas y citas para que te recordemos a tiempo: https://acompana.mx/mama/{{3}} Te escribimos pronto para la videollamada de bienvenida.
+```
+Ejemplo: `{{1}}` = Juan · `{{2}}` = Doña Rosa · `{{3}}` = Xy12ab34Cd56ef78Gh90ij12

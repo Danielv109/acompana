@@ -3,9 +3,10 @@ import { enlaceWhatsApp, marca } from "@/lib/marca";
 import e from "./inicio.module.css";
 
 const dia = [
-  { hora: "9:00", texto: "Le mandamos un saludo por WhatsApp. Ella contesta con una nota de voz, como si platicara con alguien de confianza." },
-  { hora: "9:05", texto: "Platican unos minutos: cómo durmió, si ya tomó su pastilla, qué va a hacer hoy. La voz se acuerda de lo que le contó ayer." },
-  { hora: "10:00", texto: "Una persona de nuestro equipo lee la plática, revisa el resumen y te llega a tu WhatsApp." },
+  { hora: "9:00", texto: "Le mandamos un saludo por WhatsApp. Ella contesta con una nota de voz y platican a gusto: cómo amaneció, la novela, lo que pasó con la vecina." },
+  { hora: "Cuando ella quiera", texto: "Puede escribir o mandar audios a cualquier hora. La voz se acuerda de su comadre, de sus nietos y de lo que le contó ayer." },
+  { hora: "10:00", texto: "Una persona de nuestro equipo revisa la plática y te llega el resumen. Todo queda al día en la página de tu mamá." },
+  { hora: "Antes de que haga falta", texto: "Te avisamos cuando a una medicina le quedan 5 días y un día antes de cada cita. Después de la cita, le preguntamos cómo le fue y te contamos." },
   { hora: "Si algo preocupa", texto: "Si menciona una caída, un dolor fuerte o una llamada rara del “banco”, te avisamos en ese momento, sin esperar al resumen." },
 ];
 
@@ -17,6 +18,14 @@ const preguntas = [
   {
     p: "¿Platica con una persona o con una inteligencia artificial?",
     r: "La plática la hace un asistente con inteligencia artificial, preparado para hablar con calma, cariño y paciencia. Una persona de nuestro equipo lee cada plática y revisa cada resumen antes de mandártelo. Si tu mamá pregunta con quién habla, siempre le decimos la verdad.",
+  },
+  {
+    p: "¿Le van a decir a mi mamá que se le acaba la medicina?",
+    r: "No. Tú nos dices qué medicinas toma, cuándo las surtiste y cuánto le duran, y el aviso te llega solo a ti. A ella no la preocupamos con eso: con ella solo platicamos y, si quiere, le recordamos con cariño tomar su pastilla.",
+  },
+  {
+    p: "¿Qué pasa con sus historias y su voz?",
+    r: "De vez en cuando le preguntamos por su vida: cómo conoció a tu papá, la receta del mole. Cuando termina, le preguntamos si quiere que guardemos la historia con su voz para la familia. Solo si dice que sí, queda en su página para que la escuchen cuando quieran. Las demás notas de voz se borran a los 30 días.",
   },
   {
     p: "¿Qué pasa si no contesta?",
@@ -68,10 +77,10 @@ export default function Inicio() {
         <section className={e.portada}>
           <div className={`contenedor ${e.portadaInterior}`}>
             <div className={e.portadaTexto}>
-              <h1>Cada mañana platicamos con tu mamá. Cada mañana te contamos cómo está.</h1>
+              <h1>Tu mamá tiene con quién platicar a gusto. Tú, todo lo de ella al día.</h1>
               <p className={e.entrada}>
-                Le escribimos por WhatsApp para saber cómo amaneció, recordarle su medicina y hacerle compañía un rato.
-                Tú recibes un resumen y un aviso si algo anda mal, estés en otra ciudad o en otro país.
+                La acompañamos por WhatsApp: platica de su día, de su gente y de sus recuerdos con una voz que se acuerda de todo.
+                A ti te avisamos antes de que se acabe una medicina, te recordamos sus citas y te contamos cómo está, estés donde estés.
               </p>
               <div className={e.botones}>
                 <Link href="/alta" className="boton boton-principal">Probar {marca.diasDePrueba} días gratis</Link>
@@ -126,20 +135,20 @@ export default function Inicio() {
             <div>
               <h2>Para ella, compañía</h2>
               <ul className={e.lista}>
-                <li>Una voz amable que la llama por su nombre y se acuerda de lo que le contó ayer.</li>
-                <li>El recordatorio de su medicina, dicho con cariño y sin regaños.</li>
-                <li>No tiene que aprender nada nuevo: solo contestar como contesta a sus hijos.</li>
-                <li>Si un día no quiere platicar, se respeta. Mañana le volvemos a escribir.</li>
+                <li>Alguien con quien platicar a gusto a cualquier hora: de la novela, de la colonia, de sus recuerdos.</li>
+                <li>Una voz que se acuerda de su comadre, de sus nietos y de lo que le contó ayer.</li>
+                <li>Sus historias guardadas con su voz para la familia, solo si ella quiere.</li>
+                <li>No tiene que aprender nada nuevo, y nunca la preocupamos con pendientes.</li>
               </ul>
             </div>
             <div>
-              <h2>Para ti, tranquilidad</h2>
+              <h2>Para ti, todo al día</h2>
               <ul className={e.lista}>
-                <li>Un resumen diario con algo concreto de su día, no un “todo bien” vacío.</li>
-                <li>Aviso inmediato si menciona una caída, un dolor fuerte o algo raro con su banco.</li>
-                <li>Aviso si no contestó en todo el día, para que le llames.</li>
-                <li>Mándale un recado por WhatsApp y se lo decimos en su plática, con tus palabras.</li>
-                <li>Tus hermanos también pueden recibir los resúmenes, para que no todo dependa de ti.</li>
+                <li>La página de tu mamá: sus medicinas, sus citas, lo que contó del doctor y lo último de ella, siempre actualizado.</li>
+                <li>Aviso cuando a una medicina le quedan 5 días y un día antes de cada cita.</li>
+                <li>Aviso inmediato si algo preocupa, y si no contestó en todo el día.</li>
+                <li>Recados con tus palabras, que le decimos en su plática.</li>
+                <li>Pregunta “¿cómo va mi mamá?” por WhatsApp a cualquier hora y te contestamos con lo último.</li>
               </ul>
             </div>
           </div>
@@ -183,12 +192,13 @@ export default function Inicio() {
               </p>
               <p className={e.planUsd}>o ${marca.precios.basico.usd} dólares al mes si pagas desde Estados Unidos</p>
               <ul className={e.planIncluye}>
-                <li>Saludo y plática todas las mañanas</li>
+                <li>Compañía por WhatsApp todos los días, a la hora que ella quiera</li>
+                <li>La página de tu mamá, siempre al día</li>
+                <li>Recordatorios de medicinas y citas para ti</li>
                 <li>Resumen diario revisado por una persona</li>
                 <li>Avisos inmediatos si algo preocupa</li>
-                <li>Aviso si no contestó en el día</li>
-                <li>Ficha de emergencia lista para el 911</li>
-                <li>Hasta 4 familiares reciben los resúmenes</li>
+                <li>Sus historias con su voz, si ella quiere</li>
+                <li>Hasta 4 familiares incluidos</li>
               </ul>
               <Link href="/alta" className="boton boton-principal" style={{ width: "100%" }}>Probar {marca.diasDePrueba} días gratis</Link>
               <p className={e.fundador}>
