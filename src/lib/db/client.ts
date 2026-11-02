@@ -6,21 +6,22 @@ import { env } from "../env";
 
 export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 
-let instancia: Db | null = null;
+// Se guarda en globalThis para que todas las partes del servidor compartan la misma conexión
+const global = globalThis as unknown as { __acompanaDb?: Db };
 
 /** Conexión única a Postgres (se reutiliza entre peticiones). */
 export function getDb(): Db {
-  if (!instancia) {
-    // La base local del modo prueba (PGlite) atiende una consulta a la vez
-    const cliente = postgres(env.databaseUrl, { max: env.modoPrueba ? 1 : 5, prepare: false });
-    instancia = drizzle(cliente, { schema }) as unknown as Db;
+  if (!global.__acompanaDb) {
+    if (env.modoPrueba) throw new Error("La base de prueba no está lista. Arranca con: npm run probar");
+    const cliente = postgres(env.databaseUrl, { max: 5, prepare: false });
+    global.__acompanaDb = drizzle(cliente, { schema }) as unknown as Db;
   }
-  return instancia;
+  return global.__acompanaDb;
 }
 
-/** Solo para pruebas: usar otra base de datos (por ejemplo, PGlite en memoria). */
+/** Usar otra base de datos (pruebas automáticas y modo prueba, con PGlite). */
 export function usarDb(db: Db) {
-  instancia = db;
+  global.__acompanaDb = db;
 }
 
 export { schema };
