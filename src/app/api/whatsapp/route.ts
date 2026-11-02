@@ -5,6 +5,7 @@ import { depsReales, procesarEntrante } from "@/lib/acompana";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 /** Meta llama aquí una vez para verificar el webhook. */
 export async function GET(req: Request) {
@@ -34,13 +35,11 @@ export async function POST(req: Request) {
   if (mensajes.length) {
     after(async () => {
       const d = depsReales();
-      for (const m of mensajes) {
-        try {
-          await procesarEntrante(d, m);
-        } catch (e) {
-          console.error("Error procesando mensaje de WhatsApp", m.id, e);
-        }
-      }
+      // En paralelo: si llegan varios mensajes juntos, la lógica los agrupa y contesta una sola vez
+      const resultados = await Promise.allSettled(mensajes.map((m) => procesarEntrante(d, m)));
+      resultados.forEach((r, i) => {
+        if (r.status === "rejected") console.error("Error procesando mensaje de WhatsApp", mensajes[i].id, r.reason);
+      });
     });
   }
   return NextResponse.json({ ok: true });

@@ -15,7 +15,7 @@ export default function Gracias() {
         <li>En la videollamada le dejamos el teléfono listo, escucha la voz que la va a saludar y nos da su consentimiento.</li>
         <li>A la mañana siguiente llega su primer saludo, y a ti tu primer resumen.</li>
       </ol>
-      <p>Tus {marca.diasDePrueba} días gratis empiezan con el primer saludo, no hoy.</p>
+      <p>Tus {marca.diasDePrueba} días gratis cuentan desde hoy. Si la bienvenida se retrasa por nuestra parte, te reponemos esos días.</p>
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 28 }}>
         <a className="boton boton-principal" href={enlaceWhatsApp("Hola, acabo de registrarme en Acompaña.")} target="_blank" rel="noreferrer">Escribirnos ahora</a>
         <Link className="boton boton-secundario" href="/">Volver al inicio</Link>

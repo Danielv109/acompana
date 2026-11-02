@@ -2,9 +2,9 @@
  * La lógica del servicio: el saludo diario, la plática, las alertas y los resúmenes.
  * Cada función recibe sus dependencias para poder probarla sin WhatsApp ni IA reales.
  */
-import { and, asc, desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lte } from "drizzle-orm";
 import { getDb, type Db } from "./db/client";
-import { adultos, alertas, contactos, familias, medicinas, mensajes, platicas, resumenes } from "./db/schema";
+import { adultos, alertas, contactos, familias, medicinas, mensajes, platicas, recados, resumenes } from "./db/schema";
 import { getIA, type IA, type Turno } from "./ai/ia";
 import { getVoz, type Voz } from "./voz/voz";
 import { getMensajero, type Mensajero } from "./whatsapp/mensajero";
@@ -14,7 +14,7 @@ import type { Perfil } from "./ai/instrucciones";
 import { ahoraEnZona, fechaLarga, minutosDeHora, minutosEntre } from "./tiempo";
 import { env } from "./env";
 
-export type Deps = { db: Db; ia: IA; voz: Voz; wa: Mensajero; ahora: () => Date };
+export type Deps = { db: Db; ia: IA; voz: Voz; wa: Mensajero; ahora: () => Date; esperar?: (ms: number) => Promise<void> };
 
 /** Se crean al usarse: así un error de configuración aparece solo donde realmente hace falta esa pieza. */
 export function depsReales(): Deps {
@@ -24,6 +24,7 @@ export function depsReales(): Deps {
     get voz() { return getVoz(); },
     get wa() { return getMensajero(); },
     ahora: () => new Date(),
+    esperar: (ms) => new Promise((r) => setTimeout(r, ms)),
   };
 }
 
@@ -32,13 +33,19 @@ export const REGLAS = {
   reintentoSinRespuesta: 120, // si no contesta, se vuelve a saludar a las 2 horas
   intentosMaximos: 3,
   cierrePorSilencio: 30, // si deja de contestar a media plática, se cierra y se resume
+  esperaParaAgrupar: 7, // segundos: si manda varios mensajes seguidos, se contesta una sola vez a todos
 };
 
 // ─── Utilidades ──────────────────────────────────────────────
 
-/** Debe coincidir con el texto de la plantilla "saludo_diario" aprobada en Meta. */
+/** Debe coincidir con el texto de la plantilla "saludo_diario" aprobada en Meta. Sirve a cualquier hora. */
 export function textoSaludo(comoLlamarle: string): string {
-  return `Buenos días, ${comoLlamarle}. Le saluda Acompaña. ¿Cómo amaneció hoy? Puede contestarme con una nota de voz, como si platicáramos.`;
+  return `Hola, ${comoLlamarle}, le saluda Acompaña. ¿Cómo está hoy? Puede contestarme con una nota de voz, como si platicáramos.`;
+}
+
+/** Debe coincidir con la plantilla "saludo_reintento". */
+export function textoReintento(comoLlamarle: string): string {
+  return `Hola otra vez. ${comoLlamarle}, solo quería saber cómo está. Cuando pueda, mándeme una nota de voz o un mensaje corto.`;
 }
 
 /** Los parámetros de plantillas de WhatsApp no aceptan saltos de línea ni tabuladores. */
@@ -69,6 +76,9 @@ export async function perfilDe(db: Db, adultoId: string, fecha: string): Promise
     .filter((r) => r.memoria && r.fecha !== fecha)
     .reverse()
     .flatMap((r) => r.memoria.split("\n").filter(Boolean).map((m) => `(${fechaLarga(r.fecha)}) ${m}`));
+  const pendientes = await db.select().from(recados)
+    .where(and(eq(recados.adultoId, adultoId), isNull(recados.entregadoEn)))
+    .orderBy(asc(recados.creadoEn));
   return {
     nombre: a.nombre,
     comoLlamarle: a.comoLlamarle,
@@ -77,6 +87,7 @@ export async function perfilDe(db: Db, adultoId: string, fecha: string): Promise
     memoria,
     fechaLarga: fechaLarga(fecha),
     nombreFamiliar: await familiarPrincipal(db, a.familiaId),
+    recados: pendientes.map((r) => `${r.deQuien}: ${r.texto}`),
   };
 }
 
@@ -104,7 +115,8 @@ export async function crearAlerta(
 
   // A ti (o a quien esté de guardia) siempre te llega
   if (env.adminWhatsapp) {
-    const aviso = `${datos.nivel === "rojo" ? "ALERTA ROJA" : "Alerta amarilla"}: ${a.comoLlamarle} (${a.nombre}). ${datos.motivo}. Dijo: "${datos.frase}". Revisa el panel: ${env.appUrl}/panel/alertas`;
+    const dijo = datos.frase ? ` Dijo: "${datos.frase}".` : "";
+    const aviso = `${datos.nivel === "rojo" ? "ALERTA ROJA" : "Alerta amarilla"}: ${a.comoLlamarle} (${a.nombre}). ${datos.motivo}.${dijo} Panel: ${env.appUrl}/panel/alertas`;
     await d.wa.enviarPlantilla(env.adminWhatsapp, env.plantillaAvisoInterno, [limpiarParametro(aviso)]).catch((e) => console.error("Aviso interno falló", e));
   }
 
@@ -114,7 +126,7 @@ export async function crearAlerta(
     const cs = await d.db.select().from(contactos).where(and(eq(contactos.familiaId, a.familiaId), eq(contactos.recibeAlertas, true)));
     for (const c of cs) {
       await d.wa
-        .enviarPlantilla(c.telefono, env.plantillaAlerta, [a.comoLlamarle, limpiarParametro(datos.motivo, 200), limpiarParametro(datos.frase, 300)])
+        .enviarPlantilla(c.telefono, env.plantillaAlerta, [a.comoLlamarle, limpiarParametro(datos.motivo, 200), limpiarParametro(datos.frase || "sin detalles", 300)])
         .catch((e) => console.error(`Alerta a ${c.nombre} falló`, e));
     }
   }
@@ -139,10 +151,56 @@ async function decirle(d: Deps, adulto: typeof adultos.$inferSelect, platicaId: 
   await d.db.insert(mensajes).values({ platicaId, de: "acompana", tipo, texto, waMessageId: waId });
 }
 
+async function aTexto(d: Deps, m: Entrante): Promise<string> {
+  if (m.tipo === "texto") return m.texto;
+  if (m.tipo === "audio") {
+    try {
+      const { datos, mime } = await d.wa.descargarMedia(m.mediaId);
+      return await d.voz.transcribir(datos, mime || m.mime);
+    } catch (e) {
+      console.error("No se pudo transcribir la nota de voz", e);
+      return "(Mandó una nota de voz que no se pudo escuchar.)";
+    }
+  }
+  return `(Mandó un mensaje de tipo ${m.descripcion}.)`;
+}
+
+/** Un familiar escribió al número de Acompaña: o es un recado para ella, o una pregunta para nosotros. */
+async function procesarDeFamiliar(d: Deps, contacto: typeof contactos.$inferSelect, m: Entrante): Promise<"recado" | "familia"> {
+  const [adulto] = await d.db.select().from(adultos).where(eq(adultos.familiaId, contacto.familiaId));
+  const texto = await aTexto(d, m);
+  await d.wa.marcarLeido(m.id);
+  const deQuien = `${contacto.nombre} (${contacto.relacion})`;
+  const recado = /^\s*recado\b[\s:,.-]*/i;
+  if (adulto && recado.test(texto)) {
+    const contenido = texto.replace(recado, "").trim();
+    if (contenido) {
+      await d.db.insert(recados).values({ adultoId: adulto.id, contactoId: contacto.id, deQuien, texto: contenido });
+      await d.wa.enviarTexto(contacto.telefono, `Listo, ${contacto.nombre}. Se lo decimos a ${adulto.comoLlamarle} en su próxima plática y te contamos cómo lo recibió.`);
+      return "recado";
+    }
+  }
+  if (env.adminWhatsapp) {
+    await d.wa.enviarPlantilla(env.adminWhatsapp, env.plantillaAvisoInterno, [limpiarParametro(`Mensaje de ${deQuien}${adulto ? `, familia de ${adulto.comoLlamarle}` : ""}: "${texto}". Contéstale desde WhatsApp: ${contacto.telefono}`)])
+      .catch((e) => console.error("No se pudo reenviar el mensaje del familiar", e));
+  }
+  await d.wa.enviarTexto(
+    contacto.telefono,
+    `Gracias, ${contacto.nombre}. Lo leemos y te respondemos pronto.${adulto ? ` Si quieres que le pasemos un recado a ${adulto.comoLlamarle}, manda un mensaje o una nota de voz que empiece con la palabra "Recado".` : ""}`,
+  );
+  return "familia";
+}
+
 /** Procesa un mensaje que llegó por WhatsApp. */
-export async function procesarEntrante(d: Deps, m: Entrante): Promise<"ignorado" | "duplicado" | "procesado"> {
+export async function procesarEntrante(
+  d: Deps, m: Entrante,
+): Promise<"ignorado" | "duplicado" | "procesado" | "agrupado" | "recado" | "familia"> {
   const [adulto] = await d.db.select().from(adultos).where(eq(adultos.telefono, m.de));
-  if (!adulto || !adulto.activo) return "ignorado";
+  if (!adulto) {
+    const [contacto] = await d.db.select().from(contactos).where(eq(contactos.telefono, m.de)).orderBy(asc(contactos.orden)).limit(1);
+    return contacto ? procesarDeFamiliar(d, contacto, m) : "ignorado";
+  }
+  if (!adulto.activo) return "ignorado";
 
   const [yaVisto] = await d.db.select({ id: mensajes.id }).from(mensajes).where(eq(mensajes.waMessageId, m.id));
   if (yaVisto) return "duplicado";
@@ -157,21 +215,12 @@ export async function procesarEntrante(d: Deps, m: Entrante): Promise<"ignorado"
   }
 
   // Lo que dijo, en texto
-  let texto: string;
-  if (m.tipo === "texto") texto = m.texto;
-  else if (m.tipo === "audio") {
-    try {
-      const { datos, mime } = await d.wa.descargarMedia(m.mediaId);
-      texto = await d.voz.transcribir(datos, mime || m.mime);
-    } catch (e) {
-      console.error("No se pudo transcribir la nota de voz", e);
-      texto = "(Mandó una nota de voz que no se pudo escuchar.)";
-    }
-  } else texto = `(Mandó un mensaje de tipo ${m.descripcion}.)`;
+  const texto = await aTexto(d, m);
 
   await d.db.insert(mensajes).values({ platicaId: platica.id, de: "adulto", tipo: m.tipo === "audio" ? "audio" : "texto", texto, waMessageId: m.id });
-  await d.db.update(platicas).set({ estado: platica.estado === "terminada" ? "terminada" : "en_curso", ultimaActividadEn: ahora }).where(eq(platicas.id, platica.id));
-  await d.wa.marcarLeido(m.id);
+  // Si vuelve a escribir después de terminar (o de no contestar), la plática se reabre
+  await d.db.update(platicas).set({ estado: "en_curso", ultimaActividadEn: ahora }).where(eq(platicas.id, platica.id));
+  await d.wa.marcarLeido(m.id, true); // "escribiendo…"
 
   // Señales de alerta: reglas fijas + IA. Gana el nivel más alto.
   const senales = detectarSenales(texto);
@@ -195,9 +244,13 @@ export async function procesarEntrante(d: Deps, m: Entrante): Promise<"ignorado"
     await crearAlerta(d, { adultoId: adulto.id, platicaId: platica.id, nivel, motivo: motivo || "Señal de alerta", frase: texto }, { notificarFamilia });
   }
 
-  // Si la plática de hoy ya había terminado, no reabrimos la conversación salvo alerta
-  if (platica.estado === "terminada" && nivel === "verde") {
-    return "procesado";
+  // Si manda varios mensajes seguidos, esperamos un momento y contestamos una sola vez a todos
+  if (d.esperar) {
+    await d.esperar(REGLAS.esperaParaAgrupar * 1000);
+    const [ultimo] = await d.db.select({ waMessageId: mensajes.waMessageId }).from(mensajes)
+      .where(and(eq(mensajes.platicaId, platica.id), eq(mensajes.de, "adulto")))
+      .orderBy(desc(mensajes.creadoEn)).limit(1);
+    if (ultimo && ultimo.waMessageId !== m.id) return "agrupado";
   }
 
   // Respuesta
@@ -230,12 +283,25 @@ export async function cerrarPlatica(d: Deps, platicaId: string) {
   const historial = await historialDe(d.db, platicaId);
   const r = await d.ia.resumir(perfil, historial);
 
+  // Si ya se había mandado un resumen de hoy, este se marca como actualización
+  const [previo] = await d.db.select().from(resumenes).where(eq(resumenes.platicaId, platicaId));
+  const textoBorrador = previo?.estado === "enviado" ? `Actualización: ${r.resumen}` : r.resumen;
   const valores = {
-    platicaId, nivel: r.nivel, textoBorrador: r.resumen, datos: r.datos, memoria: r.memoria.join("\n"), estado: "pendiente" as const,
+    platicaId, nivel: r.nivel, textoBorrador, datos: r.datos, memoria: r.memoria.join("\n"), estado: "pendiente" as const,
+    textoFinal: null, revisadoPor: null, enviadoEn: null,
   };
   const [resumen] = await d.db.insert(resumenes).values(valores)
     .onConflictDoUpdate({ target: resumenes.platicaId, set: valores })
     .returning();
+
+  // Los recados que ya existían cuando le hablamos por última vez quedan entregados
+  const [ultimaRespuesta] = await d.db.select({ creadoEn: mensajes.creadoEn }).from(mensajes)
+    .where(and(eq(mensajes.platicaId, platicaId), eq(mensajes.de, "acompana")))
+    .orderBy(desc(mensajes.creadoEn)).limit(1);
+  if (ultimaRespuesta && perfil.recados.length) {
+    await d.db.update(recados).set({ entregadoEn: d.ahora(), platicaId })
+      .where(and(eq(recados.adultoId, p.adultoId), isNull(recados.entregadoEn), lte(recados.creadoEn, ultimaRespuesta.creadoEn)));
+  }
   return resumen;
 }
 
@@ -286,7 +352,8 @@ export async function tick(d: Deps) {
 
       if (hoy.estado === "enviada" && minutosEntre(hoy.ultimaActividadEn, ahora) >= REGLAS.reintentoSinRespuesta) {
         if (hoy.intentos < REGLAS.intentosMaximos) {
-          await d.wa.enviarPlantilla(adulto.telefono, env.plantillaSaludo, [adulto.comoLlamarle]);
+          await d.wa.enviarPlantilla(adulto.telefono, env.plantillaReintento, [adulto.comoLlamarle]);
+          await d.db.insert(mensajes).values({ platicaId: hoy.id, de: "acompana", tipo: "texto", texto: textoReintento(adulto.comoLlamarle) });
           await d.db.update(platicas).set({ intentos: hoy.intentos + 1, ultimaActividadEn: ahora }).where(eq(platicas.id, hoy.id));
           resultado.reintentos++;
         } else {

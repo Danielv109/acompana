@@ -57,6 +57,11 @@ export function FormularioAlta() {
   return (
     <form ref={formulario} action={accion} noValidate className={e.formulario}>
       {estado.general && <div role="alert" className={e.aviso}>{estado.general}</div>}
+      {/* Campo trampa: las personas no lo ven; los bots lo llenan */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
+        <label htmlFor="sitioWeb">Sitio web</label>
+        <input id="sitioWeb" name="sitioWeb" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
 
       <fieldset className={e.bloque}>
         <legend>Tus datos</legend>

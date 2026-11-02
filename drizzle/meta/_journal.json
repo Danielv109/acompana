@@ -8,6 +8,13 @@
       "when": 1793597420924,
       "tag": "0000_nappy_vampiro",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793599391434,
+      "tag": "0001_recados",
+      "breakpoints": true
     }
   ]
 }

@@ -34,6 +34,7 @@ describe("programador diario", () => {
     r.avanzarMinutos(120); expect((await tick(d)).reintentos).toBe(1);
     r.avanzarMinutos(120); expect((await tick(d)).reintentos).toBe(1);
     r.avanzarMinutos(120); expect((await tick(d)).sinRespuesta).toBe(1);
+    expect(d.wa.plantillas("saludo_reintento")).toHaveLength(2);
 
     const [p] = await db.select().from(platicas);
     expect(p.estado).toBe("sin_respuesta");
@@ -177,5 +178,83 @@ describe("resumen para la familia", () => {
     r.fijar("2026-11-03T15:30:00Z");
     await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.m2", texto: "Buenos días" });
     expect(d.ia.ultimoPerfil?.memoria.join(" ")).toContain("Mañana va al mercado");
+  });
+});
+
+describe("mejoras de la plática", () => {
+  it("muestra 'escribiendo…' mientras prepara la respuesta", async () => {
+    const d = deps(db);
+    await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.esc", texto: "Hola" });
+    expect(d.wa.leidos).toContainEqual({ id: "wamid.esc", escribiendo: true });
+  });
+
+  it("si manda varios mensajes seguidos, contesta una sola vez a todos", async () => {
+    const d = deps(db);
+    let liberar: () => void = () => {};
+    const pausa = new Promise<void>((r) => { liberar = r; });
+    let llamadas = 0;
+    d.esperar = async () => { llamadas++; if (llamadas === 1) await pausa; };
+    const primero = procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.g1", texto: "Buenos días" });
+    await new Promise((r) => setTimeout(r, 50));
+    const segundo = await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.g2", texto: "Ya me tomé la pastilla" });
+    liberar();
+    expect(await primero).toBe("agrupado");
+    expect(segundo).toBe("procesado");
+    const respuestas = (await db.select().from(mensajes)).filter((x) => x.de === "acompana");
+    expect(respuestas).toHaveLength(1);
+    expect(d.ia.ultimoHistorial.map((t) => t.texto)).toEqual(["Buenos días", "Ya me tomé la pastilla"]);
+  });
+
+  it("si escribe después de terminar la plática, se reabre y se le contesta", async () => {
+    const d = deps(db);
+    d.ia.respuesta = { mensaje: "Que le vaya bonito.", terminar: true };
+    await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.c1", texto: "Ya me voy" });
+    d.ia.respuesta = { mensaje: "¡Qué gusto! Cuénteme.", terminar: false };
+    expect(await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.c2", texto: "Oiga, se me olvidó contarle algo" })).toBe("procesado");
+    const [p] = await db.select().from(platicas);
+    expect(p.estado).toBe("en_curso");
+  });
+
+  it("si el resumen de hoy ya se envió y la plática sigue, el nuevo queda como actualización", async () => {
+    const d = deps(db);
+    await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.u1", texto: "Bien" });
+    const [p] = await db.select().from(platicas);
+    const r = await cerrarPlatica(d, p.id);
+    await enviarResumen(d, r!.id, "Amaneció bien y platicó un rato.", "Daniel");
+    await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.u2", texto: "Oiga, me duele la cabeza" });
+    const nuevo = await cerrarPlatica(d, p.id);
+    expect(nuevo!.estado).toBe("pendiente");
+    expect(nuevo!.textoBorrador.startsWith("Actualización:")).toBe(true);
+    expect(nuevo!.textoFinal).toBeNull();
+  });
+});
+
+describe("mensajes de la familia", () => {
+  it("un recado se guarda, se le dice a ella en la siguiente plática y queda entregado", async () => {
+    const d = deps(db);
+    const r = await procesarEntrante(d, { tipo: "texto", de: "13105551234", id: "wamid.f1", texto: "Recado: que el domingo voy a comer con los niños" });
+    expect(r).toBe("recado");
+    expect(d.wa.textosA("13105551234")[0]).toContain("Se lo decimos a Doña Rosa");
+
+    await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.f2", texto: "Buenos días" });
+    expect(d.ia.ultimoPerfil?.recados).toEqual(["Juan (hijo): que el domingo voy a comer con los niños"]);
+
+    const [p] = await db.select().from(platicas);
+    await cerrarPlatica(d, p.id);
+    const { recados } = await import("../src/lib/db/schema");
+    const [rec] = await db.select().from(recados);
+    expect(rec.entregadoEn).not.toBeNull();
+
+    // Al día siguiente ya no se repite
+    await procesarEntrante({ ...d, ahora: () => new Date("2026-11-03T15:30:00Z") }, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.f3", texto: "Hola" });
+    expect(d.ia.ultimoPerfil?.recados).toEqual([]);
+  });
+
+  it("una pregunta de la familia te llega a ti y se le contesta con cortesía", async () => {
+    const d = deps(db);
+    const r = await procesarEntrante(d, { tipo: "texto", de: "13105551234", id: "wamid.f4", texto: "¿Cómo cambio la hora del saludo?" });
+    expect(r).toBe("familia");
+    expect(d.wa.plantillas("aviso_interno")[0].parametros?.[0]).toContain("¿Cómo cambio la hora del saludo?");
+    expect(d.wa.textosA("13105551234")[0]).toContain('empiece con la palabra "Recado"');
   });
 });

@@ -27,9 +27,15 @@ export const env = {
   get modeloRapido() { return opcional("ANTHROPIC_MODEL_RAPIDO", "claude-haiku-5-5"); },
 
   get openaiKey() { return requerida("OPENAI_API_KEY"); },
-  get sttModelo() { return opcional("OPENAI_STT_MODEL", "whisper-1"); },
-  get ttsModelo() { return opcional("OPENAI_TTS_MODEL", "tts-1"); },
-  get ttsVoz() { return opcional("OPENAI_TTS_VOICE", "nova"); },
+  get sttModelo() { return opcional("OPENAI_STT_MODEL", "gpt-transcribe"); },
+  get ttsModelo() { return opcional("OPENAI_TTS_MODEL", "gpt-4o-mini-tts"); },
+  get ttsVoz() { return opcional("OPENAI_TTS_VOICE", "marin"); },
+
+  get vozProveedor(): "azure" | "openai" { return process.env.VOZ_PROVEEDOR === "openai" ? "openai" : "azure"; },
+  get azureKey() { return requerida("AZURE_SPEECH_KEY"); },
+  get azureRegion() { return requerida("AZURE_SPEECH_REGION"); },
+  get azureVoz() { return opcional("AZURE_VOZ", "es-MX-DaliaNeural"); },
+  get azureVelocidad() { return opcional("AZURE_VELOCIDAD", "-5%"); },
 
   get whatsappToken() { return requerida("WHATSAPP_TOKEN"); },
   get whatsappPhoneId() { return requerida("WHATSAPP_PHONE_NUMBER_ID"); },
@@ -38,6 +44,7 @@ export const env = {
   get whatsappVersion() { return opcional("WHATSAPP_API_VERSION", "v22.0"); },
   get idiomaPlantillas() { return opcional("WHATSAPP_IDIOMA_PLANTILLAS", "es_MX"); },
   get plantillaSaludo() { return opcional("WHATSAPP_PLANTILLA_SALUDO", "saludo_diario"); },
+  get plantillaReintento() { return opcional("WHATSAPP_PLANTILLA_REINTENTO", "saludo_reintento"); },
   get plantillaResumen() { return opcional("WHATSAPP_PLANTILLA_RESUMEN", "resumen_diario"); },
   get plantillaAlerta() { return opcional("WHATSAPP_PLANTILLA_ALERTA", "alerta_familia"); },
   get plantillaAvisoInterno() { return opcional("WHATSAPP_PLANTILLA_AVISO_INTERNO", "aviso_interno"); },

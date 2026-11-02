@@ -20,6 +20,8 @@ export const marca = {
   ],
 };
 
+/** Enlace para escribir por WhatsApp. Sin número configurado, manda al registro para no dejar un botón roto. */
 export function enlaceWhatsApp(texto = "Hola, quiero saber más de Acompaña para mi mamá."): string {
+  if (!marca.whatsapp) return "/alta";
   return `https://wa.me/${marca.whatsapp}?text=${encodeURIComponent(texto)}`;
 }

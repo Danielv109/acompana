@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
-import { adultos, alertas, resumenes } from "@/lib/db/schema";
+import { adultos, alertas, contactos, fichasEmergencia, medicinas, resumenes } from "@/lib/db/schema";
+import { esTelefonoValido, normalizarTelefono } from "@/lib/telefono";
 import { cerrarSesion, contrasenaCorrecta, exigirSesion, iniciarSesion } from "@/lib/sesion";
 import { depsReales, enviarResumen } from "@/lib/acompana";
 
@@ -72,4 +73,75 @@ export async function cambiarActivo(form: FormData) {
   if (activo && !a?.consentimientoEn) return; // sin consentimiento no se activa
   await getDb().update(adultos).set({ activo }).where(eq(adultos.id, id));
   revalidatePath(`/panel/familias`);
+}
+
+// ─── Editar una familia ─────────────────────────────────────
+
+function texto(form: FormData, campo: string, max = 1500): string {
+  return String(form.get(campo) ?? "").trim().slice(0, max);
+}
+
+function rutaFamilia(form: FormData) {
+  return `/panel/familias/${String(form.get("familiaId"))}`;
+}
+
+export async function guardarAjustes(form: FormData) {
+  await exigirSesion();
+  const hora = texto(form, "horaSaludo", 5);
+  const canal = texto(form, "canal", 10);
+  const comoLlamarle = texto(form, "comoLlamarle", 80);
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora) || !["voz", "texto"].includes(canal) || comoLlamarle.length < 2) return;
+  await getDb().update(adultos).set({
+    horaSaludo: hora, canal: canal as "voz" | "texto", comoLlamarle, sobreElla: texto(form, "sobreElla"),
+  }).where(eq(adultos.id, String(form.get("id"))));
+  revalidatePath(rutaFamilia(form));
+}
+
+export async function guardarFicha(form: FormData) {
+  await exigirSesion();
+  const adultoId = String(form.get("adultoId"));
+  const valores = {
+    direccion: texto(form, "direccion", 300), referencias: texto(form, "referencias", 300),
+    enfermedades: texto(form, "enfermedades", 300), alergias: texto(form, "alergias", 300),
+    tipoSangre: texto(form, "tipoSangre", 10), seguro: texto(form, "seguro", 120),
+    hospitalCercano: texto(form, "hospitalCercano", 200), quienTieneLlave: texto(form, "quienTieneLlave", 200),
+  };
+  await getDb().insert(fichasEmergencia).values({ adultoId, ...valores })
+    .onConflictDoUpdate({ target: fichasEmergencia.adultoId, set: valores });
+  revalidatePath(rutaFamilia(form));
+}
+
+export async function agregarMedicina(form: FormData) {
+  await exigirSesion();
+  const nombre = texto(form, "nombre", 120);
+  if (!nombre) return;
+  await getDb().insert(medicinas).values({ adultoId: String(form.get("adultoId")), nombre, dosis: texto(form, "dosis", 60), horario: texto(form, "horario", 80) });
+  revalidatePath(rutaFamilia(form));
+}
+
+export async function quitarMedicina(form: FormData) {
+  await exigirSesion();
+  await getDb().delete(medicinas).where(eq(medicinas.id, String(form.get("id"))));
+  revalidatePath(rutaFamilia(form));
+}
+
+export async function agregarContacto(form: FormData) {
+  await exigirSesion();
+  const tel = texto(form, "telefono", 25);
+  const nombre = texto(form, "nombre", 80);
+  if (!nombre || !esTelefonoValido(tel)) return;
+  const familiaId = String(form.get("familiaId"));
+  const existentes = await getDb().select().from(contactos).where(eq(contactos.familiaId, familiaId));
+  await getDb().insert(contactos).values({
+    familiaId, nombre, telefono: normalizarTelefono(tel), relacion: texto(form, "relacion", 40) || "familiar",
+    recibeResumen: form.get("recibeResumen") === "si", recibeAlertas: form.get("recibeAlertas") === "si",
+    puedeAcudir: form.get("puedeAcudir") === "si", orden: existentes.length,
+  });
+  revalidatePath(rutaFamilia(form));
+}
+
+export async function quitarContacto(form: FormData) {
+  await exigirSesion();
+  await getDb().delete(contactos).where(eq(contactos.id, String(form.get("id"))));
+  revalidatePath(rutaFamilia(form));
 }

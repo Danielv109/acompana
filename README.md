@@ -17,7 +17,8 @@ Etapa 2 (semi-automática): la IA platica, resume y detecta alertas; **nada le l
 | Red de seguridad | `src/lib/ai/senales.ts` | Detecta frases de riesgo sin IA ("me caí", "me duele el pecho"...) |
 | Lógica del servicio | `src/lib/acompana.ts` | Saludo diario, reintentos, plática, alertas, resúmenes |
 | WhatsApp | `src/lib/whatsapp`, `src/app/api/whatsapp` | Recibe y manda mensajes por la API oficial de Meta |
-| Voz | `src/lib/voz/voz.ts` | Notas de voz a texto y respuestas en voz |
+| Voz | `src/lib/voz` | Entiende sus notas de voz (OpenAI) y le responde con voz mexicana (Azure) |
+| Recados | `src/lib/acompana.ts` | La familia escribe "Recado: ..." y se lo decimos en su siguiente plática |
 | Programador | `src/app/api/cron` | Se llama cada 5 minutos |
 | Cobros | `src/lib/cobros.ts`, `src/app/api/stripe` | 14 días gratis y suscripción mensual con Stripe |
 | Revisión de configuración | `/api/salud` | Te dice qué variables faltan |
@@ -85,13 +86,14 @@ Crea una base Postgres gratis en [Neon](https://neon.tech) o [Supabase](https://
 3. Crea un **token permanente** (usuario del sistema) → `WHATSAPP_TOKEN`. Copia el **Phone number ID** → `WHATSAPP_PHONE_NUMBER_ID`.
 4. En **WhatsApp → Configuración → Webhook**: URL `https://TU-URL/api/whatsapp`, token de verificación = el que pusiste en `WHATSAPP_VERIFY_TOKEN`. Suscríbete al campo **messages**.
 5. Copia el **App secret** (Configuración básica de la app) → `WHATSAPP_APP_SECRET`.
-6. Crea y manda a aprobar las 4 plantillas de [`docs/plantillas-whatsapp.md`](docs/plantillas-whatsapp.md).
+6. Crea y manda a aprobar las 5 plantillas de [`docs/plantillas-whatsapp.md`](docs/plantillas-whatsapp.md).
 
 ### 4. IA y voz
-- Llave de Claude en [console.anthropic.com](https://console.anthropic.com) → `ANTHROPIC_API_KEY`.
-- Llave de OpenAI en [platform.openai.com](https://platform.openai.com) (voz a texto y texto a voz) → `OPENAI_API_KEY`.
+- **Claude** (platica, clasifica y resume): llave en [console.anthropic.com](https://console.anthropic.com) → `ANTHROPIC_API_KEY`.
+- **OpenAI** (entiende sus notas de voz): llave en [platform.openai.com](https://platform.openai.com) → `OPENAI_API_KEY`. Usamos `gpt-transcribe`, el modelo vigente; `whisper-1` y `gpt-4o-transcribe` se retiran el 26 de febrero de 2027.
+- **Azure Speech** (le responde con voz y acento mexicano): en [portal.azure.com](https://portal.azure.com) crea un recurso **Speech**, copia la llave → `AZURE_SPEECH_KEY` y la región → `AZURE_SPEECH_REGION`. Voces: `es-MX-DaliaNeural` (mujer) o `es-MX-JorgeNeural` (hombre). Elegimos Azure porque los modelos de voz de OpenAI que funcionan con notas de voz se retiran el 6 de enero de 2027 y porque tiene acento mexicano. Si prefieres OpenAI mientras tanto, pon `VOZ_PROVEEDOR=openai`.
 
-Revisa en sus páginas los modelos y precios vigentes; los nombres de modelo se cambian en el `.env` sin tocar código.
+Los nombres de modelos y voces se cambian en el `.env` sin tocar código.
 
 ### 5. El programador (cada 5 minutos)
 `vercel.json` ya pide a Vercel llamar `/api/cron` cada 5 minutos, pero el plan gratuito de Vercel limita la frecuencia de los cron. Si no te deja, usa [cron-job.org](https://cron-job.org) (gratis) con la URL:
@@ -109,6 +111,16 @@ Sin Stripe configurado, el registro funciona igual y la familia queda en prueba 
 
 ---
 
+## Cuánto cuesta operarlo
+
+Revisa siempre los precios vigentes; esto es lo que debes considerar:
+
+- **WhatsApp**: desde julio de 2025 Meta cobra por mensaje y, desde el 1 de octubre de 2026, también los mensajes de servicio después de los primeros 1,000 gratis al mes por número, y los de utilidad dentro de la ventana de 24 horas. Una plática diaria son unos 6 a 10 mensajes salientes, así que con 30 familias pasas de los 1,000 gratis. Consulta la tarifa de México en la [página de precios de Meta](https://developers.facebook.com/documentation/business-messaging/whatsapp/pricing).
+- **Claude**: una plática corta más su resumen consume poco; usa el modelo rápido (`ANTHROPIC_MODEL_RAPIDO`) para revisar alertas.
+- **Voz**: OpenAI cobra por minuto transcrito y Azure por caracteres convertidos a voz (Azure tiene un nivel gratuito mensual).
+
+Por eso las respuestas de la IA son cortas: además de ser mejores para ella, cuestan menos.
+
 ## Cómo se opera un día
 
 1. **Familia nueva**: te llega un WhatsApp. Agenda la videollamada de bienvenida.
@@ -116,7 +128,9 @@ Sin Stripe configurado, el registro funciona igual y la familia queda en prueba 
 3. **Cada mañana**: el saludo sale solo a la hora elegida. Si no contesta, se reintenta a las 2 y 4 horas; si sigue sin contestar, te llega una alerta.
 4. **Resúmenes**: en **Panel → Resúmenes por revisar**, lee la plática, corrige el resumen y aprueba. Primero aparecen rojos y amarillos.
 5. **Alertas**: en **Panel → Alertas** tienes el protocolo, los teléfonos y la ficha de emergencia. Anota qué hiciste y márcala como atendida.
-6. **Cada viernes**: revisa los errores de la IA que anotaste y mejora `src/lib/ai/instrucciones.ts`.
+6. **Familiares que escriben**: si un familiar responde al número de Acompaña con un mensaje que empieza con "Recado", se guarda y se le dice a ella en su próxima plática. Cualquier otro mensaje te llega a tu WhatsApp para que lo contestes tú.
+7. **Cambios**: en **Panel → Familias** puedes cambiar la hora del saludo, si responde con voz o texto, medicinas, contactos y ficha de emergencia.
+8. **Cada viernes**: revisa los errores de la IA que anotaste y mejora `src/lib/ai/instrucciones.ts`.
 
 Para cambiar tu nombre, tu historia, el correo o los precios de la página: `src/lib/marca.ts`.
 
@@ -126,7 +140,6 @@ Para cambiar tu nombre, tu historia, el correo o los precios de la página: `src
 
 - Llamadas a teléfono fijo o celular sin WhatsApp.
 - Segunda plática por la tarde, reporte semanal y plan completo.
-- Mensajes de voz del hijo que se le pasan a la mamá.
-- Agregar o editar contactos y medicinas desde el panel (por ahora, en la base de datos).
+- Llamadas de voz en tiempo real: la API de llamadas de WhatsApp ya existe, pero exige pedir permiso de llamada a cada persona y tiene límites diarios; vale la pena cuando tengas clientes.
 - Revisión legal del aviso de privacidad y los términos (`src/app/privacidad`, `src/app/terminos`): están marcados como versión preliminar.
 - Foto real tuya en la página (reemplaza el círculo con la inicial).

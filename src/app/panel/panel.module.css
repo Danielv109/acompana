@@ -37,3 +37,13 @@
 .protocolo { background: var(--rojo-claro); border-radius: 14px; padding: 16px 20px; margin: 14px 0; }
 .protocolo ol { margin: 6px 0 0; padding-left: 22px; }
 .login { max-width: 440px; margin: 10vh auto; background: var(--papel); padding: 40px; border-radius: var(--radio-tarjeta); border: 1px solid var(--linea); }
+.editar { margin-top: 16px; border-top: 1px solid var(--linea); padding-top: 12px; }
+.editar summary { cursor: pointer; font-weight: 700; color: var(--pino); padding: 6px 0; }
+.editar[open] summary { margin-bottom: 14px; }
+.filaAccion { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.quitar { background: none; border: 1px solid var(--linea); border-radius: 8px; padding: 4px 12px; font: inherit; font-size: 0.88rem; color: var(--rojo); cursor: pointer; }
+.quitar:hover { border-color: var(--rojo); }
+.campoCompacto { display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center; margin-bottom: 8px; }
+.campoCompacto label { margin: 0; font-weight: 400; color: var(--tinta-suave); font-size: 0.95rem; }
+.campoCompacto input { min-height: 42px; padding: 8px 12px; }
+@media (max-width: 600px) { .campoCompacto { grid-template-columns: 1fr; gap: 4px; } }

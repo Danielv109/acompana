@@ -6,7 +6,24 @@ export interface Mensajero {
   enviarAudio(para: string, audioOgg: Buffer): Promise<string | null>;
   enviarPlantilla(para: string, plantilla: string, parametros: string[]): Promise<string | null>;
   descargarMedia(mediaId: string): Promise<{ datos: Buffer; mime: string }>;
-  marcarLeido(waMessageId: string): Promise<void>;
+  /** Marca como leído y muestra "escribiendo…" mientras preparamos la respuesta (dura hasta 25 s). */
+  marcarLeido(waMessageId: string, escribiendo?: boolean): Promise<void>;
+}
+
+/**
+ * En México, el identificador de WhatsApp de un celular puede ser 52 + 10 dígitos o 521 + 10 dígitos.
+ * Si un envío falla porque "el número no existe", se reintenta con el otro formato.
+ */
+export function formatoAlternoMx(numero: string): string | null {
+  if (numero.startsWith("521") && numero.length === 13) return "52" + numero.slice(3);
+  if (numero.startsWith("52") && numero.length === 12) return "521" + numero.slice(2);
+  return null;
+}
+
+function esErrorDeDestinatario(json: any): boolean {
+  const codigo = json?.error?.code;
+  // 131026: mensaje no entregable / número no válido; 131030: destinatario no permitido (modo prueba); 100: parámetro inválido
+  return codigo === 131026 || codigo === 131030 || (codigo === 100 && /phone|recipient|to/i.test(JSON.stringify(json?.error ?? {})));
 }
 
 /** Cliente de la API oficial de WhatsApp Business (Cloud API de Meta). */
@@ -15,15 +32,22 @@ export class WhatsAppCloud implements Mensajero {
     return `https://graph.facebook.com/${env.whatsappVersion}`;
   }
 
-  private async llamar(ruta: string, cuerpo: unknown): Promise<any> {
-    const r = await fetch(`${this.base()}/${ruta}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${env.whatsappToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify(cuerpo),
-    });
-    const json = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(`WhatsApp respondió ${r.status}: ${JSON.stringify(json)}`);
-    return json;
+  private async llamar(ruta: string, cuerpo: Record<string, unknown>): Promise<any> {
+    const enviar = async (c: Record<string, unknown>) => {
+      const r = await fetch(`${this.base()}/${ruta}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${env.whatsappToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(c),
+      });
+      return { ok: r.ok, status: r.status, json: await r.json().catch(() => ({})) };
+    };
+    let r = await enviar(cuerpo);
+    const alterno = typeof cuerpo.to === "string" ? formatoAlternoMx(cuerpo.to) : null;
+    if (!r.ok && alterno && esErrorDeDestinatario(r.json)) {
+      r = await enviar({ ...cuerpo, to: alterno });
+    }
+    if (!r.ok) throw new Error(`WhatsApp respondió ${r.status}: ${JSON.stringify(r.json)}`);
+    return r.json;
   }
 
   async enviarTexto(para: string, texto: string) {
@@ -44,7 +68,8 @@ export class WhatsAppCloud implements Mensajero {
     const media = await subida.json();
     if (!subida.ok) throw new Error(`No se pudo subir el audio: ${JSON.stringify(media)}`);
     const r = await this.llamar(`${env.whatsappPhoneId}/messages`, {
-      messaging_product: "whatsapp", to: para, type: "audio", audio: { id: media.id },
+      // voice: true hace que llegue como nota de voz (micrófono, reproducción automática), no como archivo
+      messaging_product: "whatsapp", to: para, type: "audio", audio: { id: media.id, voice: true },
     });
     return r.messages?.[0]?.id ?? null;
   }
@@ -74,9 +99,10 @@ export class WhatsAppCloud implements Mensajero {
     return { datos: Buffer.from(await archivo.arrayBuffer()), mime: json.mime_type ?? "audio/ogg" };
   }
 
-  async marcarLeido(waMessageId: string) {
+  async marcarLeido(waMessageId: string, escribiendo = false) {
     await this.llamar(`${env.whatsappPhoneId}/messages`, {
       messaging_product: "whatsapp", status: "read", message_id: waMessageId,
+      ...(escribiendo ? { typing_indicator: { type: "text" } } : {}),
     }).catch(() => undefined);
   }
 }

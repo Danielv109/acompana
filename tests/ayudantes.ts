@@ -24,7 +24,9 @@ export class WhatsAppFalso implements Mensajero {
   async enviarAudio(para: string, audio: Buffer) { this.enviados.push({ tipo: "audio", para, contenido: audio.toString() }); return `wamid.salida.${++this.n}`; }
   async enviarPlantilla(para: string, plantilla: string, parametros: string[]) { this.enviados.push({ tipo: "plantilla", para, contenido: plantilla, parametros }); return `wamid.salida.${++this.n}`; }
   async descargarMedia(_id: string) { return { datos: Buffer.from("audio-falso"), mime: "audio/ogg" }; }
-  async marcarLeido() {}
+  leidos: Array<{ id: string; escribiendo: boolean }> = [];
+  async marcarLeido(id: string, escribiendo = false) { this.leidos.push({ id, escribiendo }); }
+  textosA(para: string) { return this.enviados.filter((e) => e.tipo === "texto" && e.para === para).map((e) => e.contenido); }
   plantillas(nombre: string) { return this.enviados.filter((e) => e.tipo === "plantilla" && e.contenido === nombre); }
 }
 

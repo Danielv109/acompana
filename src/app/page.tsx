@@ -138,6 +138,7 @@ export default function Inicio() {
                 <li>Un resumen diario con algo concreto de su día, no un “todo bien” vacío.</li>
                 <li>Aviso inmediato si menciona una caída, un dolor fuerte o algo raro con su banco.</li>
                 <li>Aviso si no contestó en todo el día, para que le llames.</li>
+                <li>Mándale un recado por WhatsApp y se lo decimos en su plática, con tus palabras.</li>
                 <li>Tus hermanos también pueden recibir los resúmenes, para que no todo dependa de ti.</li>
               </ul>
             </div>
@@ -145,7 +146,7 @@ export default function Inicio() {
         </section>
 
         <section className={e.seccion}>
-          <div className={`contenedor ${e.honestidad}`}>
+          <div className="contenedor">
             <h2>Lo que sí hacemos y lo que no</h2>
             <div className={e.honestidadGrid}>
               <div>

@@ -13,6 +13,8 @@ export type EstadoRegistro = { errores?: Record<string, string>; general?: strin
 
 export async function registrar(_: EstadoRegistro, form: FormData): Promise<EstadoRegistro> {
   const valores = Object.fromEntries([...form.entries()].map(([k, v]) => [k, String(v)]));
+  if (valores.sitioWeb) redirect("/gracias"); // bot: fingimos éxito y no guardamos nada
+  delete valores.sitioWeb;
   const r = esquemaRegistro.safeParse(valores);
   if (!r.success) {
     const errores: Record<string, string> = {};

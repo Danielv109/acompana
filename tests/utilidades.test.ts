@@ -94,3 +94,22 @@ describe("sesión del panel", () => {
     expect(contrasenaCorrecta("otra")).toBe(false);
   });
 });
+
+describe("formatos de número en México", () => {
+  it("propone el formato alterno 52 ↔ 521", async () => {
+    const { formatoAlternoMx } = await import("../src/lib/whatsapp/mensajero");
+    expect(formatoAlternoMx("526181234567")).toBe("5216181234567");
+    expect(formatoAlternoMx("5216181234567")).toBe("526181234567");
+    expect(formatoAlternoMx("13105551234")).toBeNull();
+  });
+});
+
+describe("voz", () => {
+  it("arma SSML seguro con voz mexicana", async () => {
+    const { ssml } = await import("../src/lib/voz/voz");
+    const x = ssml("Doña Rosa, ¿le gustó el pan & café?", "es-MX-DaliaNeural", "-5%");
+    expect(x).toContain("es-MX-DaliaNeural");
+    expect(x).toContain("pan &amp; café");
+    expect(x).not.toContain("& café");
+  });
+});

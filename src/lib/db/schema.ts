@@ -129,3 +129,15 @@ export const alertas = pgTable("alertas", {
   creadaEn: timestamp("creada_en", { withTimezone: true }).notNull().defaultNow(),
   atendidaEn: timestamp("atendida_en", { withTimezone: true }),
 }, (t) => [index("alertas_estado_idx").on(t.estado)]);
+
+/** Recados que la familia le manda (por WhatsApp, empezando con "Recado"). Se los decimos en la siguiente plática. */
+export const recados = pgTable("recados", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  adultoId: uuid("adulto_id").notNull().references(() => adultos.id, { onDelete: "cascade" }),
+  contactoId: uuid("contacto_id").references(() => contactos.id, { onDelete: "set null" }),
+  deQuien: text("de_quien").notNull(), // "Juan (hijo)"
+  texto: text("texto").notNull(),
+  platicaId: uuid("platica_id").references(() => platicas.id, { onDelete: "set null" }),
+  creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
+  entregadoEn: timestamp("entregado_en", { withTimezone: true }),
+}, (t) => [index("recados_adulto_idx").on(t.adultoId)]);

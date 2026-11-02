@@ -8,7 +8,8 @@ export type Entrante =
 
 /** Verifica que el aviso realmente venga de Meta (encabezado X-Hub-Signature-256). */
 export function firmaValida(cuerpo: string, firma: string | null, secreto: string): boolean {
-  if (!secreto) return true; // sin secreto configurado no se puede verificar (solo para desarrollo)
+  // Sin secreto no se puede verificar: solo se permite en desarrollo
+  if (!secreto) return process.env.NODE_ENV !== "production";
   if (!firma?.startsWith("sha256=")) return false;
   const esperada = createHmac("sha256", secreto).update(cuerpo, "utf8").digest("hex");
   const a = Buffer.from(firma.slice(7), "hex");
