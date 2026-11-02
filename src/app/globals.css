@@ -1,0 +1,98 @@
+/*
+  Acompaña · sistema visual
+  - Verde pino: confianza y calma (los colores fríos bajan la tensión; el verde suma cercanía y vida).
+  - Fondo verde muy claro en lugar de blanco puro: menos deslumbrante, más hogar.
+  - Cempasúchil solo como acento pequeño: calidez mexicana sin gritar.
+  - Atkinson Hyperlegible: tipografía diseñada para personas con baja visión.
+  - Texto base grande (19px) y alto contraste: lo leen hijos de 40 a 60 años, muchas veces desde el celular.
+*/
+:root {
+  --pino: #1e4a44;
+  --pino-hondo: #143530;
+  --pino-claro: #e2ede9;
+  --fondo: #f4f7f5;
+  --papel: #ffffff;
+  --tinta: #17221f;
+  --tinta-suave: #4b5954;
+  --linea: #cfdcd7;
+  --cempasuchil: #e59e2e;
+  --cempasuchil-claro: #fbefd9;
+  --rojo: #a8231a;
+  --rojo-claro: #fbe9e7;
+  --amarillo: #8a4b06;
+  --amarillo-claro: #fdf1dc;
+  --verde: #1f6b3a;
+  --verde-claro: #e3f3e8;
+
+  --fuente: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ancho: 1120px;
+  --radio-boton: 12px;
+  --radio-tarjeta: 20px;
+  --sombra-mensaje: 0 1px 2px rgba(20, 53, 48, 0.08), 0 12px 32px rgba(20, 53, 48, 0.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--tinta);
+  background: var(--fondo);
+  -webkit-font-smoothing: antialiased;
+}
+@media (max-width: 640px) { body { font-size: 18px; } }
+
+h1, h2, h3 { line-height: 1.15; color: var(--pino-hondo); margin: 0 0 0.5em; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2.2rem, 5.2vw, 3.4rem); font-weight: 700; }
+h2 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); font-weight: 700; }
+h3 { font-size: 1.25rem; font-weight: 700; }
+p { margin: 0 0 1em; max-width: 64ch; }
+a { color: var(--pino); text-underline-offset: 3px; }
+a:hover { color: var(--pino-hondo); }
+strong { font-weight: 700; }
+
+:focus-visible { outline: 3px solid var(--cempasuchil); outline-offset: 3px; border-radius: 6px; }
+
+.contenedor { width: min(var(--ancho), 100% - 32px); margin-inline: auto; }
+
+/* Botones */
+.boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 56px; padding: 0 26px; border-radius: var(--radio-boton);
+  font: inherit; font-weight: 700; text-decoration: none; cursor: pointer;
+  border: 2px solid transparent; transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.boton-principal { background: var(--pino); color: #fff; }
+.boton-principal:hover { background: var(--pino-hondo); color: #fff; }
+.boton-secundario { background: transparent; color: var(--pino); border-color: var(--pino); }
+.boton-secundario:hover { background: var(--pino-claro); color: var(--pino-hondo); }
+.boton-peligro { background: var(--rojo); color: #fff; }
+.boton-chico { min-height: 44px; padding: 0 18px; font-size: 0.95rem; }
+.boton:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Formularios */
+label { display: block; font-weight: 700; margin-bottom: 6px; }
+.ayuda { display: block; font-weight: 400; color: var(--tinta-suave); font-size: 0.9rem; margin-top: 2px; }
+input[type="text"], input[type="email"], input[type="tel"], input[type="time"], input[type="password"], select, textarea {
+  width: 100%; font: inherit; color: var(--tinta); background: var(--papel);
+  border: 2px solid var(--linea); border-radius: 10px; padding: 12px 14px; min-height: 52px;
+}
+textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+input:focus, select:focus, textarea:focus { border-color: var(--pino); outline: none; box-shadow: 0 0 0 3px var(--pino-claro); }
+.campo { margin-bottom: 22px; }
+.casilla { display: flex; gap: 12px; align-items: flex-start; font-weight: 400; margin-bottom: 14px; }
+.casilla input { width: 24px; height: 24px; margin-top: 3px; flex: none; accent-color: var(--pino); }
+
+/* Niveles de alerta (panel) */
+.nivel { display: inline-block; padding: 2px 12px; border-radius: 999px; font-weight: 700; font-size: 0.9rem; }
+.nivel-verde { background: var(--verde-claro); color: var(--verde); }
+.nivel-amarillo { background: var(--amarillo-claro); color: var(--amarillo); }
+.nivel-rojo { background: var(--rojo-claro); color: var(--rojo); }
+
+.visualmente-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

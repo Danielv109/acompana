@@ -1,0 +1,21 @@
+.pagina { padding: 32px 0 96px; }
+.volver { display: inline-block; margin-bottom: 28px; font-weight: 700; text-decoration: none; }
+.intro { max-width: 720px; margin-bottom: 36px; }
+.intro p { color: var(--tinta-suave); font-size: 1.1rem; }
+.pasos { display: flex; flex-wrap: wrap; gap: 10px 28px; padding: 0; margin: 20px 0 0; list-style: none; color: var(--tinta-suave); font-size: 0.98rem; counter-reset: paso; }
+.pasos li { counter-increment: paso; }
+.pasos li::before { content: counter(paso) ". "; font-weight: 700; color: var(--pino); }
+.formulario { max-width: 860px; }
+.bloque { border: 1px solid var(--linea); background: var(--papel); border-radius: var(--radio-tarjeta); padding: 28px 28px 8px; margin: 0 0 24px; }
+.bloque legend { font-weight: 700; font-size: 1.35rem; color: var(--pino-hondo); padding: 0 8px; margin-left: -8px; }
+.explica { color: var(--tinta-suave); font-size: 0.98rem; margin: 0 0 20px; }
+.subtitulo { font-weight: 700; margin: 8px 0 4px; }
+.opcional { font-weight: 400; color: var(--tinta-suave); }
+.dos { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+.tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 20px; }
+@media (max-width: 720px) { .dos, .tres { grid-template-columns: 1fr; } .bloque { padding: 22px 18px 4px; } }
+.error { color: var(--rojo); font-weight: 700; font-size: 0.95rem; margin: 6px 0 0; }
+.conError { border-color: var(--rojo) !important; }
+.aviso { background: var(--rojo-claro); color: var(--rojo); font-weight: 700; padding: 14px 18px; border-radius: 12px; margin-bottom: 24px; }
+.enviar { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.medicinas { display: grid; grid-template-columns: 1fr; max-width: 560px; }
