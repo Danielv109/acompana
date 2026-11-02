@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
-import { citas, familias, medicinas, recados } from "@/lib/db/schema";
+import { citas, familias, medicinas } from "@/lib/db/schema";
 import { ahoraEnZona } from "@/lib/tiempo";
 import { familiaPorToken } from "./datos";
 
@@ -72,14 +72,6 @@ export async function agregarCita(form: FormData) {
 export async function quitarCita(form: FormData) {
   const { adulto, ruta } = await contexto(form);
   await getDb().delete(citas).where(and(eq(citas.id, texto(form, "id", 40)), eq(citas.adultoId, adulto.id)));
-  revalidatePath(ruta);
-}
-
-export async function mandarRecado(form: FormData) {
-  const { adulto, familia, ruta } = await contexto(form);
-  const contenido = texto(form, "recado", 500);
-  if (contenido.length < 3) return;
-  await getDb().insert(recados).values({ adultoId: adulto.id, deQuien: texto(form, "deQuien", 60) || familia.nombreContacto, texto: contenido });
   revalidatePath(ruta);
 }
 

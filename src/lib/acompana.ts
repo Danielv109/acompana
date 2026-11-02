@@ -2,9 +2,9 @@
  * La lógica del servicio: el saludo diario, la plática, las alertas y los resúmenes.
  * Cada función recibe sus dependencias para poder probarla sin WhatsApp ni IA reales.
  */
-import { and, asc, desc, eq, inArray, isNotNull, isNull, lte } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { getDb, type Db } from "./db/client";
-import { adultos, alertas, contactos, familias, medicinas, mensajes, platicas, recados, resumenes } from "./db/schema";
+import { adultos, alertas, contactos, familias, medicinas, mensajes, platicas, resumenes } from "./db/schema";
 import { getIA, type IA, type Turno } from "./ai/ia";
 import { getVoz, type Voz } from "./voz/voz";
 import { getMensajero, type Mensajero } from "./whatsapp/mensajero";
@@ -78,9 +78,6 @@ export async function perfilDe(db: Db, adultoId: string, fecha: string): Promise
     .filter((r) => r.memoria && r.fecha !== fecha)
     .reverse()
     .flatMap((r) => r.memoria.split("\n").filter(Boolean).map((m) => `(${fechaLarga(r.fecha)}) ${m}`));
-  const pendientes = await db.select().from(recados)
-    .where(and(eq(recados.adultoId, adultoId), isNull(recados.entregadoEn)))
-    .orderBy(asc(recados.creadoEn));
   const ficha = await contextoFicha(db, adultoId, fecha);
   return {
     nombre: a.nombre,
@@ -90,7 +87,6 @@ export async function perfilDe(db: Db, adultoId: string, fecha: string): Promise
     memoria,
     fechaLarga: fechaLarga(fecha),
     nombreFamiliar: await familiarPrincipal(db, a.familiaId),
-    recados: pendientes.map((r) => `${r.deQuien}: ${r.texto}`),
     personas: ficha.personas,
     temas: ficha.temas,
     preguntaHistoria: ficha.preguntaHistoria,
@@ -182,7 +178,6 @@ async function aTexto(d: Deps, m: Entrante): Promise<string> {
   return (await aTextoConAudio(d, m)).texto;
 }
 
-/** Un familiar escribió al número de Acompaña: o es un recado para ella, o una pregunta para nosotros. */
 /** El mensaje completo tiene que ser la instrucción (para no confundir "¿toma su pastilla todos los días?"). */
 export const COMANDOS_AVISOS = {
   importante: /^(quiero |prefiero |mejor |m[aá]ndame |avisame |av[ií]same )?(recibir )?(s[oó]lo|nada m[aá]s) (lo )?importante|^menos mensajes/i,
@@ -190,12 +185,15 @@ export const COMANDOS_AVISOS = {
 };
 const comoComando = (t: string) => t.toLowerCase().replace(/[¿?¡!.,]/g, "").replace(/\s+/g, " ").trim();
 
-async function procesarDeFamiliar(d: Deps, contacto: typeof contactos.$inferSelect, m: Entrante): Promise<"recado" | "familia" | "estado" | "avisos"> {
+/**
+ * Un familiar escribió al número de Acompaña: quiere saber cómo va ella, cambiar cuándo le escribimos,
+ * o nos pregunta algo a nosotros. Nunca le pasamos mensajes a ella de parte de su familia: eso es entre ellos.
+ */
+async function procesarDeFamiliar(d: Deps, contacto: typeof contactos.$inferSelect, m: Entrante): Promise<"familia" | "estado" | "avisos"> {
   const [adulto] = await d.db.select().from(adultos).where(eq(adultos.familiaId, contacto.familiaId));
   const texto = await aTexto(d, m);
   await d.wa.marcarLeido(m.id);
   const deQuien = `${contacto.nombre} (${contacto.relacion})`;
-  const esRecado = /^\s*recado/i.test(texto);
 
   // "Solo lo importante" / "Todos los días": cambia qué resúmenes le llegan
   const orden = comoComando(texto);
@@ -210,20 +208,11 @@ async function procesarDeFamiliar(d: Deps, contacto: typeof contactos.$inferSele
     return "avisos";
   }
 
-  const pregunta = /c[oó]mo (va|est[aá]|sigue|anda|amaneci[oó])|novedades|resumen|lo [uú]ltimo|medicin|pastilla|cita|qu[eé] tal|surt|detalle|enlace|link|p[aá]gina/i;
-  if (adulto && pregunta.test(texto) && !esRecado) {
+  const pregunta = /c[oó]mo (va|est[aá]|sigue|anda|amaneci[oó])|novedades|resumen|lo [uú]ltimo|medicin|pastilla|cita|qu[eé] tal|surt|detalle|enlace|link|p[aá]gina|doctor|m[eé]dico|le fue/i;
+  if (adulto && pregunta.test(texto)) {
     const { fecha } = ahoraEnZona(adulto.zonaHoraria, d.ahora());
     await d.wa.enviarTexto(contacto.telefono, await estadoParaFamilia(d.db, adulto, fecha));
     return "estado";
-  }
-  const recado = /^\s*recado\b[\s:,.-]*/i;
-  if (adulto && recado.test(texto)) {
-    const contenido = texto.replace(recado, "").trim();
-    if (contenido) {
-      await d.db.insert(recados).values({ adultoId: adulto.id, contactoId: contacto.id, deQuien, texto: contenido });
-      await d.wa.enviarTexto(contacto.telefono, `Listo, ${contacto.nombre}. Se lo decimos a ${adulto.comoLlamarle} en su próxima plática y te contamos cómo lo recibió.`);
-      return "recado";
-    }
   }
   if (env.adminWhatsapp) {
     await d.wa.enviarPlantilla(env.adminWhatsapp, env.plantillaAvisoInterno, [limpiarParametro(`Mensaje de ${deQuien}${adulto ? `, familia de ${adulto.comoLlamarle}` : ""}: "${texto}". Contéstale desde WhatsApp: ${contacto.telefono}`)])
@@ -231,7 +220,7 @@ async function procesarDeFamiliar(d: Deps, contacto: typeof contactos.$inferSele
   }
   await d.wa.enviarTexto(
     contacto.telefono,
-    `Gracias, ${contacto.nombre}. Lo leemos y te respondemos pronto.${adulto ? ` Si quieres que le pasemos un recado a ${adulto.comoLlamarle}, manda un mensaje o una nota de voz que empiece con la palabra "Recado".` : ""}`,
+    `Gracias, ${contacto.nombre}. Lo leemos y te respondemos pronto.${adulto ? ` Si quieres saber cómo va ${adulto.comoLlamarle}, escribe "¿cómo va?".` : ""}`,
   );
   return "familia";
 }
@@ -239,7 +228,7 @@ async function procesarDeFamiliar(d: Deps, contacto: typeof contactos.$inferSele
 /** Procesa un mensaje que llegó por WhatsApp. */
 export async function procesarEntrante(
   d: Deps, m: Entrante,
-): Promise<"ignorado" | "duplicado" | "procesado" | "agrupado" | "recado" | "familia" | "estado" | "avisos"> {
+): Promise<"ignorado" | "duplicado" | "procesado" | "agrupado" | "familia" | "estado" | "avisos"> {
   const [adulto] = await d.db.select().from(adultos).where(eq(adultos.telefono, m.de));
   if (!adulto) {
     const [contacto] = await d.db.select().from(contactos).where(eq(contactos.telefono, m.de)).orderBy(asc(contactos.orden)).limit(1);
@@ -350,15 +339,6 @@ export async function cerrarPlatica(d: Deps, platicaId: string) {
   const [resumen] = await d.db.insert(resumenes).values(valores)
     .onConflictDoUpdate({ target: resumenes.platicaId, set: valores })
     .returning();
-
-  // Los recados que ya existían cuando le hablamos por última vez quedan entregados
-  const [ultimaRespuesta] = await d.db.select({ creadoEn: mensajes.creadoEn }).from(mensajes)
-    .where(and(eq(mensajes.platicaId, platicaId), eq(mensajes.de, "acompana")))
-    .orderBy(desc(mensajes.creadoEn)).limit(1);
-  if (ultimaRespuesta && perfil.recados.length) {
-    await d.db.update(recados).set({ entregadoEn: d.ahora(), platicaId })
-      .where(and(eq(recados.adultoId, p.adultoId), isNull(recados.entregadoEn), lte(recados.creadoEn, ultimaRespuesta.creadoEn)));
-  }
   return (await enviarSiNoEsDelicado(d, resumen)) ?? resumen;
 }
 

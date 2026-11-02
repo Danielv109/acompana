@@ -146,7 +146,7 @@ export default function Inicio() {
                 <li>La página de tu mamá: sus medicinas, sus citas, lo que contó del doctor y lo último de ella, siempre actualizado.</li>
                 <li>Aviso cuando a una medicina le quedan 5 días y un día antes de cada cita.</li>
                 <li>Aviso inmediato si algo preocupa, y si no contestó en todo el día.</li>
-                <li>Recados con tus palabras, que le decimos en su plática.</li>
+                <li>En cada resumen, algo de qué platicar cuando le marques.</li>
                 <li>Pregunta “¿cómo va mi mamá?” por WhatsApp a cualquier hora y te contestamos con lo último.</li>
               </ul>
             </div>

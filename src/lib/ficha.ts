@@ -202,6 +202,10 @@ export async function estadoParaFamilia(db: Db, adulto: typeof adultos.$inferSel
   partes.push(ultimo?.texto ? `${cap(cuandoEs(ultimo.fecha, hoy))}: ${ultimo.texto}` : "Todavía no hay un resumen enviado.");
   const conDatos = meds.map((m) => ({ m, n: diasRestantes(m, hoy) })).filter((x) => x.n !== null);
   if (conDatos.length) partes.push(`Medicinas: ${conDatos.map(({ m, n }) => `${m.nombre} (${textoDiasRestantes(n)})`).join(", ")}.`);
+  const [delDoctor] = await db.select().from(citas)
+    .where(and(eq(citas.adultoId, adulto.id), lt(citas.fecha, hoy), ne(citas.loQueConto, "")))
+    .orderBy(desc(citas.fecha)).limit(1);
+  if (delDoctor) partes.push(`De su cita con ${delDoctor.conQuien} (${cuandoEs(delDoctor.fecha, hoy)}) contó: "${delDoctor.loQueConto}"`);
   if (proxima) partes.push(`Próxima cita: ${cuandoEs(proxima.fecha, hoy)}${proxima.hora ? ` a las ${proxima.hora}` : ""} con ${proxima.conQuien}.`);
   partes.push(`Todo lo demás, en su página: ${enlacePagina(token)}`);
   return partes.join("\n\n");

@@ -23,9 +23,6 @@ export class IAEjemplo implements IA {
     if (senales.length) {
       return { mensaje: `Ay, ${nombre}, qué pena. ¿Desde cuándo se siente así? Si quiere, le aviso a ${perfil.nombreFamiliar.split(" ")[0]} para que le llame.`, terminar: false };
     }
-    if (perfil.recados.length && deElla.length === 1) {
-      return { mensaje: `Qué gusto saludarla, ${nombre}. Oiga, le manda decir ${perfil.recados[0]}`, terminar: false };
-    }
     const preguntas = [
       `Qué gusto, ${nombre}. ¿Y ya desayunó? ¿Qué preparó hoy?`,
       `¿Y qué tal durmió? ¿Ya se tomó su pastilla de la mañana?`,

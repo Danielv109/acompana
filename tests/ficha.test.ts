@@ -43,9 +43,12 @@ describe("medicinas: los recordatorios son para el hijo, nunca para ella", () =>
     const { instruccionesPlatica } = await import("../src/lib/ai/instrucciones");
     const texto = instruccionesPlatica({
       nombre: "Rosa", comoLlamarle: "Doña Rosa", sobreElla: "", medicinas: [], memoria: [], fechaLarga: "lunes",
-      nombreFamiliar: "Juan", recados: [], personas: [], temas: [], preguntaHistoria: null,
+      nombreFamiliar: "Juan", personas: [], temas: [], preguntaHistoria: null,
     });
     expect(texto).toContain("Nunca le hablas de que se le está acabando una medicina");
+    // Tampoco lleva ni trae mensajes entre ella y su familia: la anima a que se hablen directo
+    expect(texto).toContain("Tú no llevas ni traes mensajes entre ella y su familia");
+    expect(texto).not.toMatch(/le manda decir|se lo haces llegar/i);
   });
 });
 

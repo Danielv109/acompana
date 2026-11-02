@@ -158,7 +158,7 @@ export default async function Probar({ searchParams }: { searchParams: Promise<{
           <Celular
             titulo={hijo.nombre} subtitulo={`${hijo.relacion} · recibe resúmenes y alertas`} telefono={hijo.telefono} filas={de(hijo.telefono)} adultoId={adulto.id}
             ayuda="Aquí le llegan al hijo los resúmenes, alertas y recordatorios."
-            sugerencias={["¿Cómo va mi mamá?", "Recado: que el domingo vamos a comer con los niños", "Solo lo importante", "Todos los días"]}
+            sugerencias={["¿Cómo va mi mamá?", "¿Cómo le fue en el doctor?", "Solo lo importante", "Todos los días"]}
           />
         )}
       </div>
