@@ -48,7 +48,9 @@ export class IAFalsa implements IA {
     this.ultimoContextoResumen = contexto ?? null;
     return {
       resumen: `Resumen de ${perfil.comoLlamarle}: ${historial.length} mensajes.\nTodo tranquilo.`,
-      nivel: "verde" as Nivel,
+      aviso: this.aviso,
+      importante: this.importante || this.nivelResumen !== "verde",
+      nivel: this.nivelResumen,
       memoria: ["Mañana va al mercado"],
       datos: { medicinaTomada: "si" as const, animo: "bien" as const, comio: "si" as const, temasDeSalud: [], cosasBonitas: [], pendientes: [] },
       personas: this.personas,
@@ -56,6 +58,9 @@ export class IAFalsa implements IA {
       historia: this.historia,
     };
   }
+  aviso = "Amaneció bien y platicó un rato.";
+  importante = false;
+  nivelResumen: Nivel = "verde";
   personas: Array<{ nombre: string; relacion: string; nota: string; cumpleanos?: string }> = [];
   loQueConto = "";
   historia: { titulo: string; texto: string; mensajes: number[] } | null = null;

@@ -17,7 +17,7 @@ const preguntas = [
   },
   {
     p: "¿Platica con una persona o con una inteligencia artificial?",
-    r: "La plática la hace un asistente con inteligencia artificial, preparado para hablar con calma, cariño y paciencia. Una persona de nuestro equipo lee cada plática y revisa cada resumen antes de mandártelo. Si tu mamá pregunta con quién habla, siempre le decimos la verdad.",
+    r: "La plática la hace un asistente con inteligencia artificial, preparado para hablar con calma, cariño y paciencia. Cuando algo preocupa, una persona de nuestro equipo lo lee antes de avisarte; los días tranquilos te llegan solos. Si tu mamá pregunta con quién habla, siempre le decimos la verdad.",
   },
   {
     p: "¿Le van a decir a mi mamá que se le acaba la medicina?",
@@ -98,20 +98,19 @@ export default function Inicio() {
                 </div>
               </div>
               <div className={e.burbuja}>
-                <p className={e.burbujaTitulo}>Doña Rosa amaneció contenta</p>
+                <p className={e.burbujaTitulo}>Resumen de Doña Rosa</p>
                 <p>
-                  Ya regó sus plantas y se tomó el Losartán con el café. Contó que hoy viene su comadre Chela a comer
-                  y que la rodilla le molesta menos que ayer. Si puedes, pregúntale por la receta del mole que quiere
-                  enseñarle a Sofía.
+                  Amaneció contenta y ya se tomó el Losartán. Hoy viene su comadre Chela a comer; pregúntale por la
+                  receta del mole que quiere enseñarle a Sofía.
                 </p>
+                <p className={e.firma}>Los detalles, en su página →</p>
                 <ul className={e.chips}>
                   <li>Tomó su medicina</li>
                   <li>Desayunó</li>
                   <li>De buen ánimo</li>
                 </ul>
-                <p className={e.firma}>Revisado por {marca.fundador}, de {marca.nombre}</p>
               </div>
-              <figcaption className={e.pie}>Así se ve el resumen que te llega cada día.</figcaption>
+              <figcaption className={e.pie}>Así te llega por WhatsApp: corto, y con un enlace por si quieres los detalles. Tú eliges si cada día o solo cuando haya algo importante.</figcaption>
             </figure>
           </div>
         </section>
@@ -167,8 +166,8 @@ export default function Inicio() {
                 <p>Ni a ella ni a ti por teléfono. Si alguien le llama diciendo que es de {marca.nombre} y le pide eso, es un fraude.</p>
               </div>
               <div>
-                <h3>Una persona revisa todo</h3>
-                <p>Ningún resumen te llega sin que alguien de nuestro equipo lo haya leído. La tecnología nos ayuda; las decisiones las toma una persona.</p>
+                <h3>Una persona revisa lo delicado</h3>
+                <p>Si algo preocupa, alguien de nuestro equipo lo lee antes de avisarte y te ayuda a decidir qué hacer. La tecnología nos ayuda; las decisiones importantes las toma una persona.</p>
               </div>
             </div>
           </div>

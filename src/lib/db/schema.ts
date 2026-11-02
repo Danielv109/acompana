@@ -33,6 +33,8 @@ export const familias = pgTable("familias", {
   pruebaTerminaEn: timestamp("prueba_termina_en", { withTimezone: true }),
   /** Enlace privado de "la página de mamá": /mama/<token> */
   tokenPagina: text("token_pagina").$defaultFn(nuevoToken),
+  /** Qué resúmenes llegan por WhatsApp: todos los días o solo cuando hay algo importante. Alertas y recordatorios llegan siempre. */
+  avisos: text("avisos", { enum: ["diario", "importante"] }).notNull().default("diario"),
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("familias_token_idx").on(t.tokenPagina)]);
 
@@ -128,13 +130,17 @@ export type DatosResumen = {
   pendientes: string[];
 };
 
-/** Resumen para la familia. Nada sale sin que una persona lo apruebe. */
+/** Resumen para la familia. Lo delicado lo revisa una persona antes de salir (ver REVISAR_RESUMENES). */
 export const resumenes = pgTable("resumenes", {
   id: uuid("id").primaryKey().defaultRandom(),
   platicaId: uuid("platica_id").notNull().references(() => platicas.id, { onDelete: "cascade" }),
   nivel: text("nivel", { enum: ["verde", "amarillo", "rojo"] }).notNull(),
   textoBorrador: text("texto_borrador").notNull(),
   textoFinal: text("texto_final"),
+  /** Versión corta para WhatsApp (1 o 2 frases); los detalles quedan en su página. */
+  aviso: text("aviso"),
+  /** Si la IA cree que vale la pena avisar aunque la familia pidió "solo lo importante". */
+  importante: boolean("importante").notNull().default(false),
   datos: jsonb("datos").$type<DatosResumen>().notNull(),
   memoria: text("memoria").notNull().default(""), // lo que conviene recordar mañana
   estado: text("estado", { enum: ["pendiente", "enviado", "descartado"] }).notNull().default("pendiente"),

@@ -13,6 +13,9 @@ export type PersonaMencionada = { nombre: string; relacion: string; nota: string
 
 export type ResultadoResumen = {
   resumen: string;
+  /** Versión corta para WhatsApp */
+  aviso: string;
+  importante: boolean;
   nivel: Nivel;
   datos: DatosResumen;
   memoria: string[];
@@ -122,12 +125,14 @@ export class IAClaude implements IA {
       messages: [{ role: "user", content: `Esta es la plática de hoy:\n\n${transcripcion}` }],
     });
     const x = entradaDeHerramienta<{
-      resumen: string; nivel: Nivel; medicinaTomada: DatosResumen["medicinaTomada"]; animo: DatosResumen["animo"];
+      resumen: string; aviso?: string; importante?: boolean; nivel: Nivel; medicinaTomada: DatosResumen["medicinaTomada"]; animo: DatosResumen["animo"];
       comio: DatosResumen["comio"]; temasDeSalud: string[]; cosasBonitas: string[]; pendientes: string[]; memoria: string[];
       personas?: PersonaMencionada[]; loQueContoDelDoctor?: string; historia?: { titulo: string; texto: string; mensajes: number[] };
     }>(r, "resumir");
     return {
       resumen: x.resumen.trim(),
+      aviso: (x.aviso ?? "").trim(),
+      importante: Boolean(x.importante) || x.nivel !== "verde",
       nivel: x.nivel,
       memoria: x.memoria ?? [],
       personas: (x.personas ?? []).filter((p) => p.nombre?.trim()),

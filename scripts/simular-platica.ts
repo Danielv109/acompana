@@ -55,7 +55,7 @@ async function main() {
       if (r.terminar) break;
     }
     const res = await ia.resumir(p, historial, { citasPorPreguntar: ["Ayer, cardiólogo (Dr. Ramírez)"] });
-    console.log(`\n--- Resumen para Juan (${res.nivel}) ---\n${res.resumen}\n--- Memoria para mañana ---\n${res.memoria.join("\n")}`);
+    console.log(`\n--- Resumen para Juan (${res.nivel}${res.importante ? ", importante" : ""}) ---\nPor WhatsApp: ${res.aviso}\n\nEn su página: ${res.resumen}\n--- Memoria para mañana ---\n${res.memoria.join("\n")}`);
     if (res.personas.length) console.log(`--- Su gente ---\n${res.personas.map((x) => `${x.nombre} (${x.relacion}): ${x.nota}`).join("\n")}`);
     if (res.loQueContoDelDoctor) console.log(`--- Lo que contó del doctor ---\n${res.loQueContoDelDoctor}`);
     if (res.historia) console.log(`--- Historia guardada: ${res.historia.titulo} ---\n${res.historia.texto}`);

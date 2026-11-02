@@ -26,16 +26,19 @@ Ejemplo: `{{1}}` = Doña Rosa
 
 > El texto de `textoReintento()` en `src/lib/acompana.ts` debe decir lo mismo (empieza con "Hola otra vez." porque Meta no permite que una plantilla empiece con una variable).
 
-## 2. `resumen_diario` (a la familia, después de que lo apruebas)
+## 2. `resumen_diario` (a la familia: aviso corto + enlace)
+
+Los días normales sale solo; los amarillos y rojos, después de que los revisas en el panel (se cambia con `REVISAR_RESUMENES`). `{{3}}` es el aviso corto de 1 o 2 frases; el resumen completo queda en la página.
 
 ```
 Resumen de {{1}} del {{2}}:
 
 {{3}}
 
-Todo lo de ella, en su página: https://acompana.mx/mama/{{4}} (solo para tu familia). Para mandarle un recado, responde empezando con la palabra Recado.
+Detalles en su página: https://acompana.mx/mama/{{4}}
+Responde "solo lo importante" si prefieres menos mensajes.
 ```
-Ejemplo: `{{1}}` = Doña Rosa · `{{2}}` = lunes 3 de noviembre · `{{3}}` = Amaneció contenta y ya se tomó su pastilla. · `{{4}}` = Xy12ab34Cd56ef78Gh90ij12
+Ejemplo: `{{1}}` = Doña Rosa · `{{2}}` = lunes 3 de noviembre · `{{3}}` = Amaneció contenta y ya se tomó su pastilla. Le duele un poco la rodilla, pregúntale cómo sigue. · `{{4}}` = Xy12ab34Cd56ef78Gh90ij12
 
 > Cambia `https://acompana.mx` por tu dominio real (el mismo de `APP_URL`) antes de mandarla a aprobar.
 
