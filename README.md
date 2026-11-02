@@ -21,9 +21,8 @@ Etapa 2 (semi-automática): la IA platica, resume y detecta alertas; **nada le l
 | Lógica del servicio | `src/lib/acompana.ts` | Saludo diario, reintentos, plática, alertas, resúmenes |
 | WhatsApp | `src/lib/whatsapp`, `src/app/api/whatsapp` | Recibe y manda mensajes por la API oficial de Meta |
 | Voz | `src/lib/voz` | Entiende sus notas de voz (OpenAI) y le responde con voz mexicana (Azure) |
-| Recados | `src/lib/acompana.ts` | La familia escribe "Recado: ..." o lo deja en la página, y se lo decimos en su siguiente plática |
 | Ficha viva | `src/lib/ficha.ts` | Su gente, citas, historias, recordatorios al hijo y la respuesta a "¿cómo va mi mamá?" |
-| Página de la familia | `src/app/mama/[token]` | Enlace privado: medicinas con días restantes, citas, lo que contó del doctor, recados e historias con su voz |
+| Página de la familia | `src/app/mama/[token]` | Enlace privado: medicinas con días restantes, citas, lo que contó del doctor e historias con su voz |
 | Programador | `src/app/api/cron` | Se llama cada 5 minutos |
 | Cobros | `src/lib/cobros.ts`, `src/app/api/stripe` | 14 días gratis y suscripción mensual con Stripe |
 | Revisión de configuración | `/api/salud` | Te dice qué variables faltan |
@@ -43,7 +42,7 @@ npm install
 npm run probar
 ```
 
-Abre http://localhost:3000/panel/probar (contraseña: `prueba`) y pulsa **Crear una familia de prueba**. Verás dos celulares simulados: en el de la mamá escribes como ella y en el del hijo ves lo que le llega (y puedes contestar como él: "¿cómo va mi mamá?", "Recado: …", "solo lo importante"). Los botones mandan el saludo del día, terminan la plática para hacer el resumen y mandan los recordatorios.
+Abre http://localhost:3000/panel/probar (contraseña: `prueba`) y pulsa **Crear una familia de prueba**. Verás dos celulares simulados: en el de la mamá escribes como ella y en el del hijo ves lo que le llega (y puedes contestar como él: "¿cómo va mi mamá?", "solo lo importante"). Los botones mandan el saludo del día, terminan la plática para hacer el resumen y mandan los recordatorios.
 
 - No sale nada a WhatsApp ni se gasta nada. La base de datos vive dentro de la app, en la carpeta `.pglite` (sin puertos ni instalar Postgres). Para empezar de cero total, cierra la app y borra esa carpeta.
 - Sin `ANTHROPIC_API_KEY` en tu `.env`, la IA contesta con respuestas de ejemplo. Con la clave, platicas con la IA de verdad (unos centavos de dólar por plática).
@@ -79,7 +78,7 @@ Probar la IA de verdad con pláticas simuladas (necesita `ANTHROPIC_API_KEY`):
 
 ```bash
 npm run simular             # todos los escenarios
-npm run simular -- caida    # uno: normal, triste, caida, fraude, pregunta_medica, quien_eres
+npm run simular -- caida    # uno: normal, triste, caida, fraude, pregunta_medica, quien_eres, historia, extrana_al_hijo, chisme
 ```
 
 Hazlo antes de atender a la primera familia y cada vez que cambies las instrucciones.
@@ -147,7 +146,7 @@ Por eso las respuestas de la IA son cortas: además de ser mejores para ella, cu
 5. **Alertas**: en **Panel → Alertas** tienes el protocolo, los teléfonos y la ficha de emergencia. Anota qué hiciste y márcala como atendida.
 6. **Medicinas y citas**: las registra la familia en la página de su mamá. A ella nunca se le habla de que se le acaba una medicina; el aviso le llega al hijo 5 días antes. Un día antes de cada cita el hijo recibe un recordatorio, y 3 horas después de la cita (si ella escribió en las últimas 23 horas) la IA le pregunta cómo le fue; si no, se lo pregunta en la siguiente plática.
 7. **Historias con su voz**: la IA le pide permiso cada vez. Solo si dice que sí se guarda en su página. Asegúrate de que el consentimiento que firma en la bienvenida mencione esto.
-8. **Familiares que escriben**: si un familiar responde al número de Acompaña con un mensaje que empieza con "Recado", se guarda y se le dice a ella en su próxima plática. Si pregunta "¿cómo va?", por sus medicinas o sus citas, se le contesta solo con lo último y el enlace a su página. Cualquier otro mensaje te llega a tu WhatsApp para que lo contestes tú.
+8. **Familiares que escriben**: si un familiar pregunta "¿cómo va?", por sus medicinas o sus citas, se le contesta solo con lo último y el enlace a su página. Con "solo lo importante" o "todos los días" elige cuándo le escribimos. Cualquier otro mensaje te llega a tu WhatsApp para que lo contestes tú. Acompaña nunca le pasa mensajes a ella de parte de su familia: eso es entre ellos.
 9. **Cambios**: en **Panel → Familias** puedes cambiar la hora del saludo, si responde con voz o texto, medicinas, contactos y ficha de emergencia.
 10. **Cada viernes**: revisa los errores de la IA que anotaste y mejora `src/lib/ai/instrucciones.ts`.
 

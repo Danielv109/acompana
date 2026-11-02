@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { asc, desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
-import { adultos, citas, contactos, familias, fichasEmergencia, historias, medicinas, platicas, recados, resumenes } from "@/lib/db/schema";
+import { adultos, citas, contactos, familias, fichasEmergencia, historias, medicinas, platicas, resumenes } from "@/lib/db/schema";
 import { asegurarToken, diasRestantes, textoDiasRestantes } from "@/lib/ficha";
 import { ahoraEnZona } from "@/lib/tiempo";
 import { telefonoBonito } from "@/lib/telefono";
@@ -27,7 +27,6 @@ export default async function Familia({ params }: { params: Promise<{ id: string
   const hoy = adulto ? ahoraEnZona(adulto.zonaHoraria).fecha : "";
   const listaCitas = adulto ? await db.select().from(citas).where(eq(citas.adultoId, adulto.id)).orderBy(desc(citas.fecha)).limit(8) : [];
   const totalHistorias = adulto ? (await db.select({ id: historias.id }).from(historias).where(eq(historias.adultoId, adulto.id))).length : 0;
-  const listaRecados = adulto ? await db.select().from(recados).where(eq(recados.adultoId, adulto.id)).orderBy(desc(recados.creadoEn)).limit(10) : [];
   const historial = adulto
     ? await db.select({ resumen: resumenes, platica: platicas }).from(resumenes)
         .innerJoin(platicas, eq(resumenes.platicaId, platicas.id))
@@ -203,18 +202,6 @@ export default async function Familia({ params }: { params: Promise<{ id: string
         </section>
       )}
 
-      {listaRecados.length > 0 && (
-        <section className={estilos.tarjeta}>
-          <h3>Recados de la familia</h3>
-          <ul className={estilos.lista}>
-            {listaRecados.map((r) => (
-              <li key={r.id}>
-                <b>{r.deQuien}:</b> {r.texto} <span className={estilos.meta}>· {r.entregadoEn ? `entregado el ${r.entregadoEn.toLocaleDateString("es-MX")}` : "pendiente para la próxima plática"}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       <section className={estilos.tarjeta}>
         <h3>Últimos días</h3>

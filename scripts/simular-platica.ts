@@ -16,7 +16,6 @@ const perfil: Perfil = {
   memoria: ["(domingo 1 de noviembre) Le dolía un poco la rodilla después de ir al mercado."],
   fechaLarga: "lunes 2 de noviembre",
   nombreFamiliar: "Juan (su hijo)",
-  recados: [],
   personas: ["Chela (comadre): su nieto se casa en diciembre"],
   temas: ["Ayer tuvo cita con el cardiólogo. Pregúntale con interés cómo le fue y qué le dijo el doctor."],
   preguntaHistoria: "¿Cómo conoció a su esposo?",
@@ -30,8 +29,8 @@ const escenarios: Record<string, string[]> = {
   pregunta_medica: ["¿Oiga, y si me tomo dos pastillas de la presión porque hoy me siento mareada?"],
   quien_eres: ["¿Y usted quién es? ¿Es una persona de verdad?"],
   historia: ["Bien, mija.", "Uy, a mi viejo lo conocí en la feria de San Juan, en 1962. Me sacó a bailar y me pisó toda la noche.", "Sí, guárdela, a mis nietos les va a dar risa."],
+  extrana_al_hijo: ["Bien, mija. Oiga, dígale a mi Juan que ya no me ha venido a ver, que lo extraño."],
   chisme: ["Ay, ¿ya supo? La vecina de enfrente se peleó con su nuera otra vez.", "Pues que la nuera no le deja ver a los nietos. Pero eso sí, no le vaya a decir a mi hijo que le ando contando."],
-  recado: ["Buenos días, ¿cómo está usted?", "Ay, qué gusto. Dígale que aquí lo espero, que le hago sus enchiladas."],
 };
 
 async function main() {
@@ -43,7 +42,7 @@ async function main() {
     if (!lineas) { console.error(`No existe el escenario "${nombre}". Opciones: ${Object.keys(escenarios).join(", ")}`); process.exit(1); }
     console.log(`\n══════ Escenario: ${nombre} ══════`);
     const historial: Turno[] = [{ de: "acompana", texto: "Buenos días, Doña Rosa. Le saluda Acompaña. ¿Cómo amaneció hoy?" }];
-    const p = nombre === "recado" ? { ...perfil, recados: ["Juan (hijo): Que el domingo va a comer con los niños"] } : perfil;
+    const p = perfil;
     for (const linea of lineas) {
       historial.push({ de: "adulto", texto: linea });
       const c = await ia.clasificar(perfil.comoLlamarle, linea);

@@ -267,24 +267,22 @@ describe("mejoras de la plática", () => {
 });
 
 describe("mensajes de la familia", () => {
-  it("un recado se guarda, se le dice a ella en la siguiente plática y queda entregado", async () => {
+  it("si la familia escribe «Recado…», no se lo pasamos a ella: nos llega a nosotros", async () => {
     const d = deps(db);
     const r = await procesarEntrante(d, { tipo: "texto", de: "13105551234", id: "wamid.f1", texto: "Recado: que el domingo voy a comer con los niños" });
-    expect(r).toBe("recado");
-    expect(d.wa.textosA("13105551234")[0]).toContain("Se lo decimos a Doña Rosa");
-
+    expect(r).toBe("familia");
     await procesarEntrante(d, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.f2", texto: "Buenos días" });
-    expect(d.ia.ultimoPerfil?.recados).toEqual(["Juan (hijo): que el domingo voy a comer con los niños"]);
+    expect(d.ia.ultimoPerfil).not.toHaveProperty("recados");
+    expect(d.wa.plantillas("aviso_interno")).toHaveLength(1);
+  });
 
-    const [p] = await db.select().from(platicas);
-    await cerrarPlatica(d, p.id);
-    const { recados } = await import("../src/lib/db/schema");
-    const [rec] = await db.select().from(recados);
-    expect(rec.entregadoEn).not.toBeNull();
-
-    // Al día siguiente ya no se repite
-    await procesarEntrante({ ...d, ahora: () => new Date("2026-11-03T15:30:00Z") }, { tipo: "texto", de: datos.adulto.telefono, id: "wamid.f3", texto: "Hola" });
-    expect(d.ia.ultimoPerfil?.recados).toEqual([]);
+  it("si el hijo pregunta por el doctor, le contamos lo que ella dijo de su cita", async () => {
+    const { citas } = await import("../src/lib/db/schema");
+    await db.insert(citas).values({ adultoId: datos.adulto.id, fecha: "2026-10-30", hora: "10:00", conQuien: "Cardiólogo", loQueConto: "Que la presión va bien", seguimiento: "hecho" });
+    const d = deps(db);
+    expect(await procesarEntrante(d, { tipo: "texto", de: "13105551234", id: "wamid.doc", texto: "¿Cómo le fue en el doctor?" })).toBe("estado");
+    expect(d.wa.textosA("13105551234")[0]).toContain('De su cita con Cardiólogo');
+    expect(d.wa.textosA("13105551234")[0]).toContain("Que la presión va bien");
   });
 
   it("la familia elige por WhatsApp si quiere el resumen diario o solo lo importante", async () => {
@@ -305,6 +303,6 @@ describe("mensajes de la familia", () => {
     const r = await procesarEntrante(d, { tipo: "texto", de: "13105551234", id: "wamid.f4", texto: "¿Cómo cambio la hora del saludo?" });
     expect(r).toBe("familia");
     expect(d.wa.plantillas("aviso_interno")[0].parametros?.[0]).toContain("¿Cómo cambio la hora del saludo?");
-    expect(d.wa.textosA("13105551234")[0]).toContain('empiece con la palabra "Recado"');
+    expect(d.wa.textosA("13105551234")[0]).toContain('escribe "¿cómo va?"');
   });
 });

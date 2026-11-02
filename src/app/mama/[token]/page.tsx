@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { and, asc, desc, eq, gte, isNull, lt } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
-import { citas, historias, medicinas, platicas, recados, resumenes } from "@/lib/db/schema";
+import { citas, historias, medicinas, platicas, resumenes } from "@/lib/db/schema";
 import { ahoraEnZona, cuandoEs, fechaLarga } from "@/lib/tiempo";
 import { diasRestantes, RECORDATORIOS, textoDiasRestantes } from "@/lib/ficha";
 import { enlaceWhatsApp, marca } from "@/lib/marca";
 import { familiaPorToken } from "./datos";
-import { agregarCita, agregarMedicina, cambiarAvisos, guardarSurtido, mandarRecado, quitarCita, quitarMedicina, yaLaSurti } from "./acciones";
+import { agregarCita, agregarMedicina, cambiarAvisos, guardarSurtido, quitarCita, quitarMedicina, yaLaSurti } from "./acciones";
 import e from "./mama.module.css";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,6 @@ export default async function PaginaMama({ params }: { params: Promise<{ token: 
   const proximas = await db.select().from(citas).where(and(eq(citas.adultoId, adulto.id), gte(citas.fecha, hoy))).orderBy(asc(citas.fecha));
   const pasadas = await db.select().from(citas).where(and(eq(citas.adultoId, adulto.id), lt(citas.fecha, hoy))).orderBy(desc(citas.fecha)).limit(6);
   const suHistoria = await db.select().from(historias).where(eq(historias.adultoId, adulto.id)).orderBy(desc(historias.creadaEn));
-  const recadosPendientes = await db.select().from(recados).where(and(eq(recados.adultoId, adulto.id), isNull(recados.entregadoEn))).orderBy(asc(recados.creadoEn));
   const oculto = <input type="hidden" name="token" value={token} />;
 
   return (
@@ -159,22 +158,6 @@ export default async function PaginaMama({ params }: { params: Promise<{ token: 
               </ul>
             </>
           )}
-        </section>
-
-        <section className={e.bloque} aria-labelledby="recado">
-          <h2 id="recado">Mándale un recado</h2>
-          <p className={e.explica}>Se lo decimos en su próxima plática, con tus palabras, y te contamos cómo lo recibió.</p>
-          {recadosPendientes.length > 0 && (
-            <ul className={e.lista}>
-              {recadosPendientes.map((x) => <li key={x.id} className={e.recado}><b>{x.deQuien}:</b> {x.texto} <span className={e.detalle}>· se lo decimos pronto</span></li>)}
-            </ul>
-          )}
-          <form action={mandarRecado} className={e.formRecado}>
-            {oculto}
-            <label>De parte de<input type="text" name="deQuien" defaultValue={familia.nombreContacto} /></label>
-            <label className={e.ancho}>Recado<textarea name="recado" required rows={3} placeholder="Que el domingo vamos a comer con los niños y le llevamos pan." /></label>
-            <button className="boton boton-principal boton-chico" type="submit">Mandar recado</button>
-          </form>
         </section>
 
         <section className={e.bloque} aria-labelledby="historias">

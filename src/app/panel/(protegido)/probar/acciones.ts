@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
-import { adultos, alertas, bandeja, citas, contactos, familias, medicinas, personas, platicas, recados, resumenes } from "@/lib/db/schema";
+import { adultos, alertas, bandeja, citas, contactos, familias, medicinas, personas, platicas, resumenes } from "@/lib/db/schema";
 import { cerrarPlatica, depsReales, procesarEntrante, saludar, type Deps } from "@/lib/acompana";
 import { recordatoriosFamilia } from "@/lib/ficha";
 import { ahoraEnZona, sumarDias } from "@/lib/tiempo";
@@ -128,7 +128,6 @@ export async function empezarDeCero(form: FormData) {
   const telefonos = [a.telefono, ...cs.map((c) => c.telefono), ...(env.adminWhatsapp ? [env.adminWhatsapp] : [])];
   await db.delete(bandeja).where(inArray(bandeja.telefono, telefonos));
   await db.delete(alertas).where(eq(alertas.adultoId, a.id));
-  await db.delete(recados).where(eq(recados.adultoId, a.id));
   await db.delete(platicas).where(eq(platicas.adultoId, a.id));
   await db.update(medicinas).set({ recordadoEn: null }).where(eq(medicinas.adultoId, a.id));
   await db.update(citas).set({ recordatorioEnviadoEn: null }).where(eq(citas.adultoId, a.id));

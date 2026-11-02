@@ -3,7 +3,7 @@ import { IAEjemplo } from "../src/lib/prueba/ia-ejemplo";
 import { textoDePlantilla } from "../src/lib/whatsapp/plantillas";
 
 const nombres = { saludo: "saludo_diario", reintento: "saludo_reintento", resumen: "resumen_diario", alerta: "alerta_familia", avisoInterno: "aviso_interno", recordatorio: "recordatorio_familia", bienvenida: "bienvenida_familia" };
-const perfil = { nombre: "Rosa", comoLlamarle: "Doña Rosa", sobreElla: "", medicinas: [], memoria: [], fechaLarga: "lunes 2 de noviembre", nombreFamiliar: "Juan (su hijo)", recados: [], personas: [], temas: [], preguntaHistoria: null };
+const perfil = { nombre: "Rosa", comoLlamarle: "Doña Rosa", sobreElla: "", medicinas: [], memoria: [], fechaLarga: "lunes 2 de noviembre", nombreFamiliar: "Juan (su hijo)", personas: [], temas: [], preguntaHistoria: null };
 
 describe("modo prueba", () => {
   it("muestra cada plantilla con el texto que vería la persona", () => {
