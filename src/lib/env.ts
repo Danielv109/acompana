@@ -16,6 +16,10 @@ function opcional(nombre: string, porDefecto: string): string {
 
 export const env = {
   get appUrl() { return opcional("APP_URL", "http://localhost:3000"); },
+  /** MODO_PRUEBA=si: WhatsApp y voz simulados en /panel/probar. Nunca lo actives en producción. */
+  get modoPrueba() { return process.env.MODO_PRUEBA === "si"; },
+  /** En modo prueba sin clave de Anthropic, la IA contesta con respuestas de ejemplo. */
+  get iaDeEjemplo() { return process.env.MODO_PRUEBA === "si" && !process.env.ANTHROPIC_API_KEY; },
   get databaseUrl() { return requerida("DATABASE_URL"); },
   get adminPassword() { return requerida("ADMIN_PASSWORD"); },
   get sessionSecret() { return requerida("SESSION_SECRET"); },

@@ -3,6 +3,7 @@ import Link from "next/link";
 import estilos from "../panel.module.css";
 import { exigirSesion } from "@/lib/sesion";
 import { salir } from "../acciones";
+import { env } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Panel · Acompaña", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ export default async function LayoutPanel({ children }: { children: React.ReactN
             <Link href="/panel">Resúmenes por revisar</Link>
             <Link href="/panel/alertas">Alertas</Link>
             <Link href="/panel/familias">Familias</Link>
+            {env.modoPrueba && <Link href="/panel/probar">Probar</Link>}
           </nav>
           <form action={salir}>
             <button className={estilos.salir} type="submit">Salir ({sesion.nombre})</button>

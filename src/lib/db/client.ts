@@ -11,7 +11,8 @@ let instancia: Db | null = null;
 /** Conexión única a Postgres (se reutiliza entre peticiones). */
 export function getDb(): Db {
   if (!instancia) {
-    const cliente = postgres(env.databaseUrl, { max: 5, prepare: false });
+    // La base local del modo prueba (PGlite) atiende una consulta a la vez
+    const cliente = postgres(env.databaseUrl, { max: env.modoPrueba ? 1 : 5, prepare: false });
     instancia = drizzle(cliente, { schema }) as unknown as Db;
   }
   return instancia;

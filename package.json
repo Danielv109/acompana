@@ -12,7 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "simular": "tsx scripts/simular-platica.ts",
-    "db:local": "pglite-server -p 5433 -m 10"
+    "db:local": "pglite-server -p 5433 -m 10",
+    "probar": "node scripts/probar.mjs"
   },
   "engines": {
     "node": ">=20"
