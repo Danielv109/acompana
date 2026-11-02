@@ -1,0 +1,48 @@
+.pagina { min-height: 100vh; background: var(--fondo); padding-bottom: 80px; }
+.cabecera { background: var(--pino-hondo); color: #fff; padding: 28px 0 32px; }
+.cabecera h1 { color: #fff; margin: 6px 0 6px; font-size: clamp(1.9rem, 4.6vw, 2.6rem); }
+.marca { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; margin: 0; color: #dbe8e3; }
+.punto { width: 12px; height: 12px; border-radius: 50%; background: var(--cempasuchil); }
+.aviso { color: #c9ddd6; font-size: 0.95rem; margin: 0; }
+.cuerpo { display: grid; gap: 22px; margin-top: -14px; max-width: 820px; }
+.bloque { background: var(--papel); border: 1px solid var(--linea); border-radius: var(--radio-tarjeta); padding: 26px 26px 22px; }
+.bloque h2 { font-size: 1.45rem; margin-bottom: 6px; }
+.explica { color: var(--tinta-suave); font-size: 0.98rem; margin: 0 0 16px; }
+.vacio { color: var(--tinta-suave); background: var(--fondo); border-radius: 12px; padding: 14px 16px; margin: 0 0 12px; }
+.cuando { font-weight: 700; color: var(--pino); margin: 0 0 4px; }
+.resumen { font-size: 1.08rem; margin: 0; }
+.lista { list-style: none; padding: 0; margin: 0 0 8px; }
+.medicina { border-top: 1px solid var(--linea); padding: 16px 0; }
+.medicina:first-child { border-top: 0; padding-top: 4px; }
+.medicinaCabeza { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.nombre { font-weight: 700; margin: 0; }
+.detalle { color: var(--tinta-suave); font-size: 0.93rem; margin: 2px 0 0; font-weight: 400; }
+.estado { border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: 0.9rem; white-space: nowrap; }
+.estado-bien { background: var(--verde-claro); color: var(--verde); }
+.estado-pronto { background: var(--amarillo-claro); color: var(--amarillo); }
+.estado-sin-datos { background: var(--fondo); color: var(--tinta-suave); border: 1px dashed var(--linea); }
+.medicinaAcciones { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; margin-top: 12px; }
+.editar summary, .agregar summary { cursor: pointer; color: var(--pino); font-weight: 700; padding: 10px 0; }
+.editar[open] { flex-basis: 100%; }
+.agregar { border-top: 1px solid var(--linea); margin-top: 8px; padding-top: 4px; }
+.formLinea { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin: 6px 0 10px; }
+.formLinea label, .formGrid label, .formRecado label { font-weight: 700; font-size: 0.92rem; display: flex; flex-direction: column; gap: 6px; }
+.formLinea input { min-height: 46px; max-width: 190px; }
+.formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 8px 0 6px; align-items: end; }
+.formGrid input { min-height: 46px; }
+@media (max-width: 600px) { .formGrid { grid-template-columns: 1fr; } }
+.quitar { background: none; border: 1px solid var(--linea); border-radius: 8px; padding: 6px 12px; font: inherit; font-size: 0.88rem; color: var(--rojo); cursor: pointer; }
+.cita { display: flex; justify-content: space-between; gap: 12px; align-items: center; border-top: 1px solid var(--linea); padding: 14px 0; }
+.cita:first-child { border-top: 0; }
+.subtitulo { font-size: 1.1rem; margin: 20px 0 8px; }
+.citaPasada { border-top: 1px solid var(--linea); padding: 12px 0; }
+.citaPasada p { margin: 0 0 4px; }
+.recado { padding: 8px 0; }
+.formRecado { display: grid; gap: 14px; }
+.formRecado input { min-height: 46px; max-width: 320px; }
+.historia { border-top: 1px solid var(--linea); padding: 18px 0 6px; }
+.historia:first-of-type { border-top: 0; padding-top: 4px; }
+.historia h3 { margin: 0; font-size: 1.15rem; }
+.audio { width: 100%; margin: 12px 0 4px; }
+.texto { white-space: pre-line; margin-top: 10px; }
+.pie { color: var(--tinta-suave); font-size: 0.95rem; padding: 0 4px; }

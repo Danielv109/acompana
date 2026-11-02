@@ -1,6 +1,9 @@
 # Acompaña
 
-Acompañamiento diario por WhatsApp para personas mayores. Cada mañana una IA platica con la persona por notas de voz; una persona de tu equipo revisa la plática y la familia recibe un resumen y avisos si algo preocupa.
+Compañía por WhatsApp para personas mayores, y todo lo de ella al día para su familia.
+
+- **Para ella:** una voz amable con quien platicar a gusto a cualquier hora, que se acuerda de su gente, le da seguimiento a sus chismes y, si ella quiere, guarda sus historias con su voz.
+- **Para el hijo:** la página privada de su mamá (medicinas, citas, lo que contó del doctor, historias), recordatorios antes de que se acabe una medicina y un día antes de cada cita, el resumen diario revisado por una persona y avisos si algo preocupa.
 
 Etapa 2 (semi-automática): la IA platica, resume y detecta alertas; **nada le llega a la familia sin que tú lo apruebes**, salvo las alertas rojas confirmadas.
 
@@ -18,7 +21,9 @@ Etapa 2 (semi-automática): la IA platica, resume y detecta alertas; **nada le l
 | Lógica del servicio | `src/lib/acompana.ts` | Saludo diario, reintentos, plática, alertas, resúmenes |
 | WhatsApp | `src/lib/whatsapp`, `src/app/api/whatsapp` | Recibe y manda mensajes por la API oficial de Meta |
 | Voz | `src/lib/voz` | Entiende sus notas de voz (OpenAI) y le responde con voz mexicana (Azure) |
-| Recados | `src/lib/acompana.ts` | La familia escribe "Recado: ..." y se lo decimos en su siguiente plática |
+| Recados | `src/lib/acompana.ts` | La familia escribe "Recado: ..." o lo deja en la página, y se lo decimos en su siguiente plática |
+| Ficha viva | `src/lib/ficha.ts` | Su gente, citas, historias, recordatorios al hijo y la respuesta a "¿cómo va mi mamá?" |
+| Página de la familia | `src/app/mama/[token]` | Enlace privado: medicinas con días restantes, citas, lo que contó del doctor, recados e historias con su voz |
 | Programador | `src/app/api/cron` | Se llama cada 5 minutos |
 | Cobros | `src/lib/cobros.ts`, `src/app/api/stripe` | 14 días gratis y suscripción mensual con Stripe |
 | Revisión de configuración | `/api/salud` | Te dice qué variables faltan |
@@ -86,7 +91,7 @@ Crea una base Postgres gratis en [Neon](https://neon.tech) o [Supabase](https://
 3. Crea un **token permanente** (usuario del sistema) → `WHATSAPP_TOKEN`. Copia el **Phone number ID** → `WHATSAPP_PHONE_NUMBER_ID`.
 4. En **WhatsApp → Configuración → Webhook**: URL `https://TU-URL/api/whatsapp`, token de verificación = el que pusiste en `WHATSAPP_VERIFY_TOKEN`. Suscríbete al campo **messages**.
 5. Copia el **App secret** (Configuración básica de la app) → `WHATSAPP_APP_SECRET`.
-6. Crea y manda a aprobar las 5 plantillas de [`docs/plantillas-whatsapp.md`](docs/plantillas-whatsapp.md).
+6. Crea y manda a aprobar las 7 plantillas de [`docs/plantillas-whatsapp.md`](docs/plantillas-whatsapp.md).
 
 ### 4. IA y voz
 - **Claude** (platica, clasifica y resume): llave en [console.anthropic.com](https://console.anthropic.com) → `ANTHROPIC_API_KEY`.
@@ -128,9 +133,11 @@ Por eso las respuestas de la IA son cortas: además de ser mejores para ella, cu
 3. **Cada mañana**: el saludo sale solo a la hora elegida. Si no contesta, se reintenta a las 2 y 4 horas; si sigue sin contestar, te llega una alerta.
 4. **Resúmenes**: en **Panel → Resúmenes por revisar**, lee la plática, corrige el resumen y aprueba. Primero aparecen rojos y amarillos.
 5. **Alertas**: en **Panel → Alertas** tienes el protocolo, los teléfonos y la ficha de emergencia. Anota qué hiciste y márcala como atendida.
-6. **Familiares que escriben**: si un familiar responde al número de Acompaña con un mensaje que empieza con "Recado", se guarda y se le dice a ella en su próxima plática. Cualquier otro mensaje te llega a tu WhatsApp para que lo contestes tú.
-7. **Cambios**: en **Panel → Familias** puedes cambiar la hora del saludo, si responde con voz o texto, medicinas, contactos y ficha de emergencia.
-8. **Cada viernes**: revisa los errores de la IA que anotaste y mejora `src/lib/ai/instrucciones.ts`.
+6. **Medicinas y citas**: las registra la familia en la página de su mamá. A ella nunca se le habla de que se le acaba una medicina; el aviso le llega al hijo 5 días antes. Un día antes de cada cita el hijo recibe un recordatorio, y 3 horas después de la cita (si ella escribió en las últimas 23 horas) la IA le pregunta cómo le fue; si no, se lo pregunta en la siguiente plática.
+7. **Historias con su voz**: la IA le pide permiso cada vez. Solo si dice que sí se guarda en su página. Asegúrate de que el consentimiento que firma en la bienvenida mencione esto.
+8. **Familiares que escriben**: si un familiar responde al número de Acompaña con un mensaje que empieza con "Recado", se guarda y se le dice a ella en su próxima plática. Si pregunta "¿cómo va?", por sus medicinas o sus citas, se le contesta solo con lo último y el enlace a su página. Cualquier otro mensaje te llega a tu WhatsApp para que lo contestes tú.
+9. **Cambios**: en **Panel → Familias** puedes cambiar la hora del saludo, si responde con voz o texto, medicinas, contactos y ficha de emergencia.
+10. **Cada viernes**: revisa los errores de la IA que anotaste y mejora `src/lib/ai/instrucciones.ts`.
 
 Para cambiar tu nombre, tu historia, el correo o los precios de la página: `src/lib/marca.ts`.
 

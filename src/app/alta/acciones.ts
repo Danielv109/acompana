@@ -64,6 +64,13 @@ export async function registrar(_: EstadoRegistro, form: FormData): Promise<Esta
     return { valores, general: "No pudimos guardar el registro. Intenta de nuevo en un momento o escríbenos por WhatsApp." };
   }
 
+  // Bienvenida a la familia con el enlace a la página de su mamá
+  if (familia.tokenPagina) {
+    getMensajero()
+      .enviarPlantilla(d.tuTelefono, env.plantillaBienvenida, [d.tuNombre, d.comoLlamarle, familia.tokenPagina])
+      .catch((e) => console.error("No se pudo mandar la bienvenida", e));
+  }
+
   // Te avisa que hay una familia nueva para agendar la videollamada
   if (env.adminWhatsapp) {
     getMensajero()

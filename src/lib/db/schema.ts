@@ -4,7 +4,15 @@ import {
 import { randomBytes } from "node:crypto";
 
 /** Audio guardado en la base de datos (notas de voz cortas, decenas de KB). */
-const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+const bytea = customType<{ data: Buffer; driverData: Buffer | Uint8Array | string }>({
+  dataType: () => "bytea",
+  toDriver: (valor) => valor,
+  // Según el controlador, llega como Buffer, Uint8Array o texto hexadecimal ("\\x6175...")
+  fromDriver: (valor) => {
+    if (typeof valor === "string") return Buffer.from(valor.startsWith("\\x") ? valor.slice(2) : valor, "hex");
+    return Buffer.from(valor);
+  },
+});
 
 /** Enlace privado de la página de la familia: imposible de adivinar. */
 export function nuevoToken(): string {

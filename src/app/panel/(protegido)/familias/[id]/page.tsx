@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { asc, desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
-import { adultos, contactos, familias, fichasEmergencia, medicinas, platicas, recados, resumenes } from "@/lib/db/schema";
+import { adultos, citas, contactos, familias, fichasEmergencia, historias, medicinas, platicas, recados, resumenes } from "@/lib/db/schema";
+import { asegurarToken, diasRestantes, textoDiasRestantes } from "@/lib/ficha";
+import { ahoraEnZona } from "@/lib/tiempo";
 import { telefonoBonito } from "@/lib/telefono";
 import { fechaLarga } from "@/lib/tiempo";
 import estilos from "../../../panel.module.css";
@@ -21,6 +23,10 @@ export default async function Familia({ params }: { params: Promise<{ id: string
   const cs = await db.select().from(contactos).where(eq(contactos.familiaId, id)).orderBy(asc(contactos.orden));
   const ficha = adulto ? (await db.select().from(fichasEmergencia).where(eq(fichasEmergencia.adultoId, adulto.id)))[0] : undefined;
   const meds = adulto ? await db.select().from(medicinas).where(eq(medicinas.adultoId, adulto.id)) : [];
+  const token = await asegurarToken(db, familia.id);
+  const hoy = adulto ? ahoraEnZona(adulto.zonaHoraria).fecha : "";
+  const listaCitas = adulto ? await db.select().from(citas).where(eq(citas.adultoId, adulto.id)).orderBy(desc(citas.fecha)).limit(8) : [];
+  const totalHistorias = adulto ? (await db.select({ id: historias.id }).from(historias).where(eq(historias.adultoId, adulto.id))).length : 0;
   const listaRecados = adulto ? await db.select().from(recados).where(eq(recados.adultoId, adulto.id)).orderBy(desc(recados.creadoEn)).limit(10) : [];
   const historial = adulto
     ? await db.select({ resumen: resumenes, platica: platicas }).from(resumenes)
@@ -34,6 +40,10 @@ export default async function Familia({ params }: { params: Promise<{ id: string
         <h1 style={{ fontSize: "2rem", margin: 0 }}>{adulto ? adulto.comoLlamarle : familia.nombreContacto}</h1>
         <p>Familia de {familia.nombreContacto} · {familia.email} · {ESTADO[familia.estado]}{familia.pruebaTerminaEn && familia.estado === "prueba" ? ` hasta el ${familia.pruebaTerminaEn.toLocaleDateString("es-MX")}` : ""}</p>
       </div>
+      <p style={{ marginTop: -12 }}>
+        <a href={`/mama/${token}`} target="_blank" rel="noreferrer">Abrir la página de la familia</a>
+        <span className={estilos.meta}> · {totalHistorias} {totalHistorias === 1 ? "historia guardada" : "historias guardadas"}</span>
+      </p>
 
       {adulto && !adulto.consentimientoEn && (
         <section className={`${estilos.tarjeta} ${estilos.tarjetaAmarilla}`}>
@@ -102,7 +112,7 @@ export default async function Familia({ params }: { params: Promise<{ id: string
                 <ul className={estilos.lista}>
                   {meds.map((m) => (
                     <li key={m.id} className={estilos.filaAccion}>
-                      <span><b>{m.nombre}</b>{m.dosis && ` · ${m.dosis}`}{m.horario && ` · ${m.horario}`}</span>
+                      <span><b>{m.nombre}</b>{m.dosis && ` · ${m.dosis}`}{m.horario && ` · ${m.horario}`} <span className={estilos.meta}>· {textoDiasRestantes(diasRestantes(m, hoy))}</span></span>
                       <form action={quitarMedicina}>
                         <input type="hidden" name="id" value={m.id} /><input type="hidden" name="familiaId" value={familia.id} />
                         <button className={estilos.quitar} type="submit" aria-label={`Quitar ${m.nombre}`}>Quitar</button>
@@ -176,6 +186,21 @@ export default async function Familia({ params }: { params: Promise<{ id: string
           </form>
         </details>
       </section>
+
+      {listaCitas.length > 0 && (
+        <section className={estilos.tarjeta}>
+          <h3>Citas</h3>
+          <ul className={estilos.lista}>
+            {listaCitas.map((c) => (
+              <li key={c.id}>
+                <b>{fechaLarga(c.fecha)}{c.hora && `, ${c.hora}`}</b> · {c.conQuien}{c.lugar && ` · ${c.lugar}`}
+                <span className={estilos.meta}> · seguimiento: {c.seguimiento}</span>
+                {c.loQueConto && <p style={{ margin: "4px 0 0" }}>Contó: “{c.loQueConto}”</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {listaRecados.length > 0 && (
         <section className={estilos.tarjeta}>

@@ -28,3 +28,26 @@ export function fechaLarga(fechaIso: string): string {
   const dia = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
   return `${dias[dia]} ${d} de ${meses[m - 1]}`;
 }
+
+function utc(fechaIso: string): number {
+  const [y, m, d] = fechaIso.split("-").map(Number);
+  return Date.UTC(y, m - 1, d);
+}
+
+/** Días de a hasta b (b − a). Ambas en formato AAAA-MM-DD. */
+export function diasEntre(a: string, b: string): number {
+  return Math.round((utc(b) - utc(a)) / 86400000);
+}
+
+export function sumarDias(fechaIso: string, dias: number): string {
+  return new Date(utc(fechaIso) + dias * 86400000).toISOString().slice(0, 10);
+}
+
+/** "mañana", "hoy", "el jueves 6 de noviembre" */
+export function cuandoEs(fechaIso: string, hoy: string): string {
+  const n = diasEntre(hoy, fechaIso);
+  if (n === 0) return "hoy";
+  if (n === 1) return "mañana";
+  if (n === -1) return "ayer";
+  return `el ${fechaLarga(fechaIso)}`;
+}

@@ -20,7 +20,7 @@ export default function Privacidad() {
         <ul>
           <li><b>De la familia que contrata:</b> nombre, parentesco, WhatsApp, correo y datos de pago (los procesa Stripe; nosotros no guardamos los números de tu tarjeta).</li>
           <li><b>De la persona acompañada:</b> nombre, cómo le gusta que le digan, WhatsApp, dirección, gustos e información que la familia comparta.</li>
-          <li><b>Datos sensibles de la persona acompañada:</b> enfermedades, alergias, medicinas, tipo de sangre, estado de ánimo y lo que comparta sobre su salud en las pláticas, incluida la transcripción de sus notas de voz.</li>
+          <li><b>Datos sensibles de la persona acompañada:</b> enfermedades, alergias, medicinas, tipo de sangre, estado de ánimo y lo que comparta sobre su salud en las pláticas, incluida la transcripción de sus notas de voz, y las historias de su vida que ella acepte guardar con su voz.</li>
           <li><b>De los contactos de emergencia:</b> nombre, parentesco y WhatsApp.</li>
         </ul>
 
@@ -28,7 +28,8 @@ export default function Privacidad() {
         <p>Finalidades necesarias para el servicio:</p>
         <ul>
           <li>Platicar todos los días con la persona acompañada y recordarle sus medicinas.</li>
-          <li>Enviar resúmenes diarios y avisos a los familiares autorizados.</li>
+          <li>Enviar resúmenes diarios, recordatorios de medicinas y citas, y avisos a los familiares autorizados.</li>
+          <li>Mantener la página privada de la familia con sus medicinas, citas, lo que contó de sus consultas e historias.</li>
           <li>Avisar a los contactos registrados cuando haya una posible emergencia y facilitar la ficha de emergencia al 911 o a los paramédicos.</li>
           <li>Cobrar el servicio y atender dudas y aclaraciones.</li>
         </ul>
@@ -41,7 +42,7 @@ export default function Privacidad() {
         <p>Solo con los familiares y contactos que la familia autoriza, y con proveedores que nos ayudan a dar el servicio bajo contrato y confidencialidad: mensajería de WhatsApp (Meta), inteligencia artificial para conversar y resumir, conversión de voz a texto, almacenamiento en la nube y procesamiento de pagos. Ninguno puede usarlos para fines propios. No vendemos datos personales.</p>
 
         <h2>Cuánto tiempo los guardamos</h2>
-        <p>No guardamos las grabaciones de voz: las convertimos a texto y las descartamos. Conservamos las transcripciones y resúmenes mientras el servicio esté activo y hasta 12 meses después, salvo que pidas antes su eliminación o la ley exija otra cosa.</p>
+        <p>Sus notas de voz se borran a los 30 días. La excepción son las historias de su vida que ella acepta guardar con su voz: le pedimos permiso cada vez, y se conservan en la página privada de su familia mientras el servicio esté activo o hasta que ella o su familia pidan borrarlas. Conservamos las transcripciones y resúmenes mientras el servicio esté activo y hasta 12 meses después, salvo que pidas antes su eliminación o la ley exija otra cosa.</p>
 
         <h2>Tus derechos</h2>
         <p>Tú o la persona acompañada pueden acceder a sus datos, corregirlos, pedir que los eliminemos u oponerse a su uso, así como revocar su consentimiento, escribiendo a <a href={`mailto:${marca.correo}`}>{marca.correo}</a> con su nombre, lo que solicita y un medio para responderle. Responderemos en los plazos que marca la ley.</p>

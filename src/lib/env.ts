@@ -45,6 +45,8 @@ export const env = {
   get idiomaPlantillas() { return opcional("WHATSAPP_IDIOMA_PLANTILLAS", "es_MX"); },
   get plantillaSaludo() { return opcional("WHATSAPP_PLANTILLA_SALUDO", "saludo_diario"); },
   get plantillaReintento() { return opcional("WHATSAPP_PLANTILLA_REINTENTO", "saludo_reintento"); },
+  get plantillaRecordatorio() { return opcional("WHATSAPP_PLANTILLA_RECORDATORIO", "recordatorio_familia"); },
+  get plantillaBienvenida() { return opcional("WHATSAPP_PLANTILLA_BIENVENIDA", "bienvenida_familia"); },
   get plantillaResumen() { return opcional("WHATSAPP_PLANTILLA_RESUMEN", "resumen_diario"); },
   get plantillaAlerta() { return opcional("WHATSAPP_PLANTILLA_ALERTA", "alerta_familia"); },
   get plantillaAvisoInterno() { return opcional("WHATSAPP_PLANTILLA_AVISO_INTERNO", "aviso_interno"); },

@@ -161,7 +161,9 @@ describe("resumen para la familia", () => {
     expect(res.enviados).toBe(1);
     const envio = d.wa.plantillas("resumen_diario")[0];
     expect(envio.para).toBe("13105551234");
-    expect(envio.parametros).toEqual(["Doña Rosa", "lunes 2 de noviembre", "Hoy amaneció muy bien. Regó sus plantas."]);
+    const { familias } = await import("../src/lib/db/schema");
+    const [fam] = await db.select().from(familias);
+    expect(envio.parametros).toEqual(["Doña Rosa", "lunes 2 de noviembre", "Hoy amaneció muy bien. Regó sus plantas.", fam.tokenPagina]);
 
     const [guardado] = await db.select().from(resumenes).where(eq(resumenes.id, r!.id));
     expect(guardado.estado).toBe("enviado");

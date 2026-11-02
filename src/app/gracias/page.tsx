@@ -11,6 +11,7 @@ export default function Gracias() {
       <h1>Listo, ya tenemos tu registro</h1>
       <p>Esto es lo que sigue:</p>
       <ol>
+        <li>Te acabamos de mandar por WhatsApp el enlace a <b>la página de tu mamá</b>. Ahí puedes decirnos cuándo surtes sus medicinas y agregar sus citas, para que te recordemos a tiempo.</li>
         <li>En las próximas 24 horas {marca.fundador} te escribe por WhatsApp para agendar una videollamada corta contigo y con ella.</li>
         <li>En la videollamada le dejamos el teléfono listo, escucha la voz que la va a saludar y nos da su consentimiento.</li>
         <li>A la mañana siguiente llega su primer saludo, y a ti tu primer resumen.</li>
