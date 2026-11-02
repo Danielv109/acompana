@@ -8,7 +8,13 @@ if (existsSync(".env")) {
   try { process.loadEnvFile(".env"); } catch { /* sigue con lo que haya */ }
 }
 
-const PUERTO_DB = 5433;
+/** Busca un puerto libre desde "desde" (por si ya hay otra base abierta, como npm run db:local). */
+const puertoLibre = (desde) => new Promise((ok) => {
+  const s = net.createServer();
+  s.once("error", () => ok(puertoLibre(desde + 1)));
+  s.listen(desde, "127.0.0.1", () => s.close(() => ok(desde)));
+});
+const PUERTO_DB = await puertoLibre(5434);
 const PUERTO_APP = process.env.PUERTO ?? "3000";
 const entorno = {
   ...process.env,
@@ -25,13 +31,16 @@ const entorno = {
 const opciones = { stdio: "inherit", shell: true, env: entorno };
 const db = spawn("npx", ["pglite-server", "--db=.pglite", `-p`, String(PUERTO_DB), "-m", "10"], opciones);
 
+let dbTermino = false;
+db.on("exit", () => { dbTermino = true; });
+
 const listo = () => new Promise((ok) => {
   const s = net.connect(PUERTO_DB, "127.0.0.1", () => { s.end(); ok(true); });
   s.on("error", () => ok(false));
 });
-for (let i = 0; i < 60 && !(await listo()); i++) await new Promise((r) => setTimeout(r, 500));
-if (!(await listo())) {
-  console.error("No arrancó la base de datos local. ¿Está ocupado el puerto 5433?");
+for (let i = 0; i < 60 && !dbTermino && !(await listo()); i++) await new Promise((r) => setTimeout(r, 500));
+if (dbTermino || !(await listo())) {
+  console.error("No arrancó la base de datos local. Cierra otras terminales con Acompaña abierto y vuelve a intentar.");
   db.kill();
   process.exit(1);
 }
